@@ -10,6 +10,8 @@ PlayState.prototype.preload = function() {
   game.load.image('star_small', 'assets/graphics/_star_small.png');
   game.load.image('star_big', 'assets/graphics/_star_big.png');
 
+  game.load.spritesheet('dust', 'assets/graphics/_dust.png', 8, 8);
+
   game.load.tilemap('level1', 'assets/maps/test.json', null, Phaser.Tilemap.TILED_JSON);
   game.load.image('tileset', 'assets/graphics/_tileset.png');
 
@@ -72,6 +74,9 @@ PlayState.prototype.create = function() {
   }
   this.stars = stars;
 
+  // Dust clouds
+  this.dust = game.add.group();
+
   chains = game.add.group();
 
   var player = game.add.sprite(16*2, 96*2, 'player');
@@ -110,6 +115,7 @@ PlayState.prototype.create = function() {
     if (this.canJump()) {
       this.body.velocity.y = -this.jumpForce;
       game.jump.play();
+      game.state.getCurrentState().spawnJumpDust(this.x, this.y + this.height * 0.5)
     }
   };
 
@@ -177,7 +183,11 @@ PlayState.prototype.create = function() {
 
 
 PlayState.prototype.update = function() {
-  game.physics.arcade.collide(this.player, this.fg)
+  game.physics.arcade.collide(this.player, this.fg, function(plr, tile) {
+    if (plr.body.velocity.y < -10) {
+      game.state.getCurrentState().spawnLandingDust(plr.x, plr.y + plr.height * 0.5)
+    }
+  })
   game.physics.arcade.collide(chains, this.fg, function(chain, tile) {
       chain.body.velocity.x *= 0.96
       chain.body.velocity.y *= 0.96
@@ -223,8 +233,44 @@ PlayState.prototype.render = function() {
   // game.debug.body(this.player);
 }
 
+PlayState.prototype.spawnDust = function(x, y) {
+  var dust = this.dust.create(x, y, 'dust');
+  dust.anchor.set(0.5, 0.5);
+  dust.animations.add('normal', [0, 1, 2, 3, 4], 10);
+  dust.animations.play('normal', null, false, true);
+  game.physics.enable(dust, Phaser.Physics.ARCADE);
+  dust.body.allowGravity = false
+  var ang = game.math.degToRad(game.rnd.angle());
+  dust.body.velocity.x = Math.random() * 100 - 50
+  dust.body.velocity.y = Math.sin(ang) * 10;
+  // game.add.tween(dust).to({angle: 360}, 3200).start();
+  return dust
+}
 
+PlayState.prototype.spawnJumpDust = function(x, y) {
+  for (var i=0; i < 2; i++) {
+    var dust = game.state.getCurrentState().spawnDust(x, y)
+    dust.body.velocity.x = (i < 1 ? -1 : 1) * game.rnd.between(20, 30)
+    dust.body.velocity.y = game.rnd.between(0, -10)
+  }
+  for (var i=0; i < 3; i++) {
+    var dust = game.state.getCurrentState().spawnDust(x + game.rnd.between(-5, 5), y)
+    dust.body.velocity.x = game.rnd.between(-10, 10)
+    dust.body.velocity.y = game.rnd.between(-25, -50)
+  }
+}
 
+PlayState.prototype.spawnLandingDust = function(x, y) {
+  for (var i=0; i < 6; i++) {
+    var dust = game.state.getCurrentState().spawnDust(x, y)
+    dust.body.velocity.x = (i < 3 ? -1 : 1) * game.rnd.between(90, 130)
+    dust.body.velocity.y = 20
+    dust.update = function() {
+      this.body.velocity.y -= 2
+      this.body.velocity.x *= 0.92
+    }
+  }
+}
 
 
 var w = 160 * 4;
