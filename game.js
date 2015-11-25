@@ -1,3 +1,6 @@
+// so fight me, pff
+var chains
+
 function PlayState(game) {
 }
 
@@ -13,7 +16,7 @@ PlayState.prototype.preload = function() {
   game.load.spritesheet('player', 'assets/graphics/_player.png', 17*2, 16*2);
   game.load.spritesheet('sword', 'assets/graphics/_sword.png', 17*2, 16*2);
 
-  game.load.spritesheet('bullet', 'assets/graphics/_bullet.png', 6*2, 6*2);
+  game.load.spritesheet('chain', 'assets/graphics/_chain_segment.png', 5*2, 5*2);
 
   game.load.image('textbox', 'assets/graphics/_textbox.png');
 
@@ -67,7 +70,7 @@ PlayState.prototype.create = function() {
   }
   this.stars = stars;
 
-  this.bullets = game.add.group();
+  chains = game.add.group();
 
   var player = game.add.sprite(16*2, 96*2, 'player');
   player.animations.add('idle', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 10, true);
@@ -123,45 +126,59 @@ PlayState.prototype.create = function() {
     player.sword.y = player.y - player.anchor.y * player.height + player.body.velocity.y * game.time.physicsElapsed
   };
 
-  // game.camera.follow(this.player);
-};
+  player.shootChain = function(dirX, dirY) {
+    var segs = []
+    for (var i=0; i < 10; i++) {
+      var chain = chains.create(player.x + i*10, player.y, 'chain');
+      chain.tint = player.team
+      game.physics.enable(chain);
+      chain.body.allowGravity = true;
+      chain.anchor.set(0.5, 0.5);
 
-PlayState.prototype.createBullet = function(x, y, dir) {
-  var bullet = this.bullets.create(x, y, 'bullet');
-  bullet.animations.add('idle', [0], 10, true);
-  bullet.animations.add('expire', [1,2,3,4], 10, false);
-  bullet.animations.play('idle');
-  game.physics.enable(bullet);
-  // bullet.body.collideWorldBounds = true;
-  bullet.body.allowGravity = false;
-  bullet.body.velocity.x = dir * 650;
-  bullet.anchor.set(0.5, 0.5);
-  bullet.scale.x = dir;
-  bullet.lifetime = 400;
+      chain.links = []
 
-  bullet.update = function() {
-    this.lifetime -= game.time.elapsed;
-    if (this.lifetime <= 0) {
-      this.expire();
+      chain.update = function() {
+        for (var j in this.links) {
+          var link = this.links[j]
+          var dx = link.x - this.x
+          var dy = link.y - this.y
+          var dist = Math.sqrt(dx*dx + dy*dy)
+          var ideal_distance = 8
+          var k = 0.5
+          if (dist > ideal_distance) {
+            this.body.velocity.x += dx * k
+            this.body.velocity.y += dy * k
+          }
+          if (dist < ideal_distance) {
+            this.body.velocity.x += -dx * k
+            this.body.velocity.y += -dy * k
+          }
+        }
+        // this.body.velocity.x *= 0.8
+        // this.body.velocity.y *= 0.8
+      };
+
+      segs[i] = chain
+      if (i > 0) {
+        chain.links.push(segs[i-1])
+        segs[i-1].links.push(chain)
+      }
+    }
+    segs[9].body.velocity.x = dirX * 20;
+    segs[9].body.velocity.y = dirY * 20;
+    player.chain = {
+      segs: segs
     }
   };
-
-  bullet.expire = function() {
-    if (!bullet.alive) { return; }
-    var e = game.add.sprite(this.x, this.y - 2*2, 'bullet');
-    e.animations.add('expire', [1,2,3,4], 15, false);
-    e.animations.play('expire');
-    game.time.events.add(300, function() { e.destroy(); });
-    this.kill();
-  };
 };
+
 
 PlayState.prototype.update = function() {
   game.physics.arcade.collide(this.player, this.fg);
-  game.physics.arcade.collide(this.bullets, this.fg, function(bullet, tile) {
-      if (bullet !== null && bullet !== undefined && bullet.exists) {
-        bullet.expire();
-      }
+  // game.physics.arcade.collide(chains, this.fg);
+  game.physics.arcade.collide(chains, this.fg, function(chain, tile) {
+      chain.body.velocity.x *= 0.96
+      chain.body.velocity.y *= 0.96
     });
 
   this.player.body.acceleration.x = 0;
@@ -179,11 +196,9 @@ PlayState.prototype.update = function() {
   this.player.update();
 
   if (game.input.keyboard.justPressed(Phaser.Keyboard.SPACEBAR)) {
-    if (this.player.fireCountdown <= 0) {
-      this.createBullet(
-          this.player.scale.x === -1 ? this.player.x - 50 : this.player.x + 35,
-          this.player.y + 2*2,
-          this.player.scale.x);
+    if (!this.player.chain) {
+      this.player.shootChain(this.player.scale.x === -1 ?
+          this.player.x - 50 : this.player.x + 35, 0)
       this.player.fireCountdown = this.player.fireDelay;
       game.gun.play();
     }
