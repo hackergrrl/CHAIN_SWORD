@@ -10,7 +10,7 @@ PlayState.prototype.preload = function() {
   game.load.image('star_small', 'assets/graphics/_star_small.png');
   game.load.image('star_big', 'assets/graphics/_star_big.png');
 
-  game.load.tilemap('level1', 'assets/maps/level1.json', null, Phaser.Tilemap.TILED_JSON);
+  game.load.tilemap('level1', 'assets/maps/test.json', null, Phaser.Tilemap.TILED_JSON);
   game.load.image('tileset', 'assets/graphics/_tileset.png');
 
   game.load.spritesheet('player', 'assets/graphics/_player.png', 17*2, 16*2);
@@ -53,17 +53,19 @@ PlayState.prototype.create = function() {
   var stars = game.add.group();
 
   this.fg = this.map.createLayer('FG');
-  this.map.setCollisionBetween(1, 7, true, this.fg);
+  this.map.setCollisionBetween(1, 300, true, this.fg);
   this.fg.resizeWorld();
 
-  for (var i=0; i < 100; i++) {
+  for (var i=0; i < 10; i++) {
     var sprite = (game.rnd.between(0,100) < 30) ? 'star_big' : 'star_small';
-    var star = stars.create(game.rnd.between(0, game.world.width), game.rnd.between(0, 16 * 32), sprite);
+    var star = stars.create(0, 0, sprite)
     star.reset = function() {
       this.x = -10;
-      this.y = game.rnd.between(0, 16 * 32);
+      this.y = game.rnd.between(0, 16 * 6);
       this.speed = game.rnd.frac() * this.maxSpeed;
     };
+    star.reset()
+    star.x = game.rnd.between(0, game.world.width),
     star.maxSpeed = (sprite === 'star_big') ? 0.2 : 0.4;
     star.speed = game.rnd.frac() * star.maxSpeed;
     star.checkWorldBounds = true;
@@ -174,8 +176,7 @@ PlayState.prototype.create = function() {
 
 
 PlayState.prototype.update = function() {
-  game.physics.arcade.collide(this.player, this.fg);
-  // game.physics.arcade.collide(chains, this.fg);
+  game.physics.arcade.collide(this.player, this.fg)
   game.physics.arcade.collide(chains, this.fg, function(chain, tile) {
       chain.body.velocity.x *= 0.96
       chain.body.velocity.y *= 0.96
@@ -212,9 +213,7 @@ PlayState.prototype.update = function() {
   this.stars.forEachAlive(function(s) {
     s.x += s.speed;
     if (s.x > game.world.width + 10) {
-      s.x = -10;
-      s.y = game.rnd.between(0, game.world.height);
-      s.speed = game.rnd.frac() * s.maxSpeed + 0.5;
+      s.reset()
     }
   });
 };
