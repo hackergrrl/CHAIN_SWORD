@@ -58,6 +58,16 @@ PlayState.prototype.create = function() {
   this.map.setCollisionBetween(1, 300, true, this.fg);
   this.fg.resizeWorld();
 
+  // for(var y = 0; y < this.fg.height; ++y){
+  //   for(var x = 0; x < this.fg.width; ++x){
+  //       var tile = this.fg.map.getTile(x, y);
+  //       if (tile) {
+  //         console.log(tile.index, tile.collideDown)
+  //         // tile.collidesDown
+  //       }
+  //   }
+  // }
+
   for (var i=0; i < 10; i++) {
     var sprite = (game.rnd.between(0,100) < 30) ? 'star_big' : 'star_small';
     var star = stars.create(0, 0, sprite)
@@ -79,7 +89,7 @@ PlayState.prototype.create = function() {
 
   chains = game.add.group();
 
-  var player = game.add.sprite(16*2, 96*2, 'player');
+  var player = game.add.sprite(16*3, 136*2, 'player');
   player.animations.add('idle', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 10, true);
   player.animations.add('jump_upward', [2], 10, false);
   player.animations.add('jump_downward', [3], 10, false);
@@ -92,7 +102,7 @@ PlayState.prototype.create = function() {
   player.body.maxVelocity.x = 150;
   player.body.setSize(8*2, 12*2, 0*2, 2*2);
   player.walkForce = 1500;
-  player.jumpForce = 450;
+  player.jumpForce = 460;
   player.fireDelay = 150;
   player.fireCountdown = 0;
   player.team = 0xFF0000;
@@ -184,8 +194,8 @@ PlayState.prototype.create = function() {
 
 PlayState.prototype.update = function() {
   game.physics.arcade.collide(this.player, this.fg, function(plr, tile) {
-    if (plr.body.velocity.y < -10) {
-      game.state.getCurrentState().spawnLandingDust(plr.x, plr.y + plr.height * 0.5)
+    if (plr.body.velocity.y < -3 && plr.body.velocity.y > -30) {
+      game.state.getCurrentState().spawnLandingDust(plr.x, plr.y + plr.height * 0.5 - plr.body.velocity.y / 2)
     }
   })
   game.physics.arcade.collide(chains, this.fg, function(chain, tile) {
