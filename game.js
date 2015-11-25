@@ -24,7 +24,6 @@ PlayState.prototype.preload = function() {
 
   game.load.audio('gun', 'assets/sounds/gun.wav');
   game.load.audio('jump', 'assets/sounds/jump.wav');
-  game.load.audio('title', 'assets/music/title.mp3');
 
   game.scale.pageAlignHorizontally = true;
   game.scale.pageAlignVertically = true;
@@ -40,13 +39,6 @@ PlayState.prototype.create = function() {
 
   game.gun = game.add.audio('gun');
   game.jump = game.add.audio('jump');
-
-  // game.music = game.add.audio('title');
-  // game.music.play('', 0, 1, true);
-
-  // game.stage.smoothed = false;
-  // game.world.setBounds(0, 0, 2000, 2000);
-  // game.camera.setBoundsToWorld();
 
   this.map = game.add.tilemap('level1');
   this.map.addTilesetImage('_tileset', 'tileset');
