@@ -87,7 +87,7 @@ PlayState.prototype.create = function() {
   player.body.maxVelocity.x = 150;
   player.body.setSize(8*2, 12*2, 0*2, 2*2);
   player.walkForce = 1500;
-  player.jumpForce = 500;
+  player.jumpForce = 450;
   player.fireDelay = 150;
   player.fireCountdown = 0;
   player.team = 0xFF0000;
@@ -121,6 +121,7 @@ PlayState.prototype.create = function() {
       player.animations.play('jump_upward');
       player.sword.animations.play('jump_upward');
     } else if (this.body.velocity.y > 10) {
+      player.animations.play('jump_downward');
       player.sword.animations.play('jump_downward');
     }
 
