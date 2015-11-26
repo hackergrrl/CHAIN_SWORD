@@ -33,9 +33,12 @@ PlayState.prototype.preload = function() {
 PlayState.prototype.create = function() {
   console.log('create');
 
-  game.physics.startSystem(Phaser.Physics.ARCADE);
-  game.physics.arcade.gravity.y = 1350;
-  game.physics.arcade.TILE_BIAS = 40;
+  game.physics.startSystem(Phaser.Physics.P2JS);
+  game.physics.p2.gravity.y = 1350;
+  game.physics.p2.restitution = 0.1
+  game.physics.p2.world.defaultContactMaterial.friction = 1.75
+  game.physics.p2.world.setGlobalStiffness(1e5);
+  // game.physics.p2.TILE_BIAS = 40;
 
   game.gun = game.add.audio('gun');
   game.jump = game.add.audio('jump');
@@ -49,6 +52,17 @@ PlayState.prototype.create = function() {
   this.fg = this.map.createLayer('FG');
   this.map.setCollisionBetween(1, 300, true, this.fg);
   this.fg.resizeWorld();
+  game.physics.p2.convertTilemap(this.map, this.fg)
+  game.physics.p2.setBoundsToWorld(true, true, true, true, false)
+
+  this.groundMaterial = game.physics.p2.createMaterial('ground');
+  this.playerMaterial = game.physics.p2.createMaterial('player');
+
+  var groundPlayerCM = game.physics.p2.createContactMaterial(
+      this.playerMaterial, this.groundMaterial, { friction: 0.0 });
+
+  game.physics.p2.setWorldMaterial(this.groundMaterial, true, true, true, true);
+
 
   // for(var y = 0; y < this.fg.height; ++y){
   //   for(var x = 0; x < this.fg.width; ++x){
@@ -78,6 +92,7 @@ PlayState.prototype.create = function() {
 
   // Dust clouds
   this.dust = game.add.group();
+  this.dustCollisionGroup = game.physics.p2.createCollisionGroup();
 
   chains = game.add.group();
 
@@ -87,18 +102,31 @@ PlayState.prototype.create = function() {
   player.animations.add('jump_downward', [3], 10, false);
   player.animations.play('idle');
   player.anchor.set(0.4, 0.5);
-  game.physics.enable(player);
-  player.body.bounce.set(0.1, 0.03);
+  game.physics.p2.enable(player);
+  player.body.fixedRotation = true
+  // player.body.bounce.set(0.1, 0.03);
   player.body.collideWorldBounds = true;
-  player.body.drag.set(2000, 0);
-  player.body.maxVelocity.x = 150;
-  player.body.setSize(8*2, 12*2, 0*2, 2*2);
-  player.walkForce = 1500;
+  player.body.setMaterial(this.playerMaterial)
+  // player.body.drag.set(2000, 0);
+  // player.body.maxVelocity.x = 150;
+  // player.body.setSize(8*2, 12*2, 0*2, 2*2);
+  player.walkForce = 150;
   player.jumpForce = 460;
   player.fireDelay = 150;
   player.fireCountdown = 0;
   player.team = 0xFF0000;
+  player.jumpCountdown = 0
   this.player = player;
+
+  player.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
+    if (shapeB.material == null) {
+      if (this.body.velocity.y < -10 && this.body.velocity.y > -40) {
+        game.state.getCurrentState().spawnLandingDust(this.x, this.y + this.height * 0.5 - 4)
+      }
+    }
+    // console.log(shapeA)
+    // console.log(shapeB)
+  }, player)
 
   var sword = game.add.sprite(16*2, 96*2, 'sword');
   sword.animations.add('idle', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 10, true);
@@ -110,12 +138,39 @@ PlayState.prototype.create = function() {
   player.sword = sword;
 
   player.canJump = function() {
-    return this.body.onFloor() || this.body.touching.down;
+    if (this.jumpCountdown > 0) {
+      return false
+    }
+    function checkIfCanJump() {
+      var yAxis = [0, 1]
+      var result = false;
+      for (var i=0; i < game.physics.p2.world.narrowphase.contactEquations.length; i++)
+      {
+        var c = game.physics.p2.world.narrowphase.contactEquations[i];
+        if (c.bodyA === player.body.data || c.bodyB === player.body.data)
+        {
+          var d = p2.vec2.dot(c.normalA, yAxis);
+          if (c.bodyA === player.body.data)
+          {
+            d *= -1;
+          }
+          if (d > 0.5)
+          {
+            result = true;
+          }
+        }
+      }
+      return result;
+    }
+    return checkIfCanJump()
+    // return this.body.onFloor() || this.body.touching.down;
   };
 
   player.jump = function() {
     if (this.canJump()) {
-      this.body.velocity.y = -this.jumpForce;
+      this.body.moveUp(this.jumpForce)
+      // this.body.velocity.y = -this.jumpForce;
+      this.jumpCountdown = 500
       game.jump.play();
       game.state.getCurrentState().spawnJumpDust(this.x, this.y + this.height * 0.5)
     }
@@ -142,7 +197,7 @@ PlayState.prototype.create = function() {
     for (var i=0; i < 10; i++) {
       var chain = chains.create(player.x + i*10, player.y, 'chain');
       chain.tint = player.team
-      game.physics.enable(chain);
+      game.physics.p2.enable(chain);
       chain.body.allowGravity = true;
       chain.anchor.set(0.5, 0.5);
 
@@ -185,24 +240,16 @@ PlayState.prototype.create = function() {
 
 
 PlayState.prototype.update = function() {
-  game.physics.arcade.collide(this.player, this.fg, function(plr, tile) {
-    if (plr.body.velocity.y < -3 && plr.body.velocity.y > -30) {
-      game.state.getCurrentState().spawnLandingDust(plr.x, plr.y + plr.height * 0.5 - plr.body.velocity.y / 2)
-    }
-  })
-  game.physics.arcade.collide(chains, this.fg, function(chain, tile) {
-      chain.body.velocity.x *= 0.96
-      chain.body.velocity.y *= 0.96
-    });
 
-  this.player.body.acceleration.x = 0;
   if (game.input.keyboard.isDown(Phaser.Keyboard.LEFT)) {
-    this.player.body.acceleration.x = -this.player.walkForce;
+    // this.player.body.velocity.x = -this.player.walkForce;
+    this.player.body.moveLeft(this.player.walkForce)
     this.player.scale.x = -1;
     this.player.sword.scale.x = -1;
   }
   if (game.input.keyboard.isDown(Phaser.Keyboard.RIGHT)) {
-    this.player.body.acceleration.x = this.player.walkForce;
+    // this.player.body.velocity.x = this.player.walkForce;
+    this.player.body.moveRight(this.player.walkForce)
     this.player.scale.x = 1;
     this.player.sword.scale.x = 1;
   }
@@ -218,8 +265,9 @@ PlayState.prototype.update = function() {
     }
   }
   this.player.fireCountdown -= game.time.elapsed;
+  this.player.jumpCountdown -= game.time.elapsed;
 
-  if (game.input.keyboard.justPressed(Phaser.Keyboard.UP)) {
+  if (game.input.keyboard.isDown(Phaser.Keyboard.UP)) {
     this.player.jump();
   }
 
@@ -240,12 +288,10 @@ PlayState.prototype.spawnDust = function(x, y) {
   dust.anchor.set(0.5, 0.5);
   dust.animations.add('normal', [0, 1, 2, 3, 4], 10);
   dust.animations.play('normal', null, false, true);
-  game.physics.enable(dust, Phaser.Physics.ARCADE);
+  game.physics.p2.enable(dust)
+  dust.body.setCollisionGroup(this.dustCollisionGroup)
+  dust.body.kinematic = true
   dust.body.allowGravity = false
-  var ang = game.math.degToRad(game.rnd.angle());
-  dust.body.velocity.x = Math.random() * 100 - 50
-  dust.body.velocity.y = Math.sin(ang) * 10;
-  // game.add.tween(dust).to({angle: 360}, 3200).start();
   return dust
 }
 
@@ -265,15 +311,55 @@ PlayState.prototype.spawnJumpDust = function(x, y) {
 PlayState.prototype.spawnLandingDust = function(x, y) {
   for (var i=0; i < 6; i++) {
     var dust = game.state.getCurrentState().spawnDust(x, y)
-    dust.body.velocity.x = (i < 3 ? -1 : 1) * game.rnd.between(90, 130)
+    dust.body.velocity.x = (i < 3 ? -1 : 1) * game.rnd.between(30, 40)
     dust.body.velocity.y = 20
     dust.update = function() {
-      this.body.velocity.y -= 2
-      this.body.velocity.x *= 0.92
+      this.body.velocity.y -= 20
+      // this.body.velocity.x *= 0.99999
     }
   }
 }
 
+// based on example code from http://phaser.io/examples/v2/p2-physics/chain
+PlayState.prototype.createRope = function (length, xAnchor, yAnchor) {
+  var lastRect;
+  var height = 20;        //  Height for the physics body - your image height is 8px
+  var width = 16;         //  This is the width for the physics body. If too small the rectangles will get scrambled together.
+  var maxForce = 20000;   //  The force that holds the rectangles together.
+
+  for (var i = 0; i <= length; i++)
+  {
+    var x = xAnchor;                    //  All rects are on the same x position
+    var y = yAnchor + (i * height);     //  Every new rect is positioned below the last
+
+    newRect = game.add.sprite(x, y, 'chain')
+
+    //  Enable physicsbody
+    game.physics.p2.enable(newRect, false);
+
+    //  Set custom rectangle
+    newRect.body.setRectangle(width, height);
+
+    if (i === 0)
+    {
+        newRect.body.static = true;
+    }
+    else
+    {  
+        //  Anchor the first one created
+        newRect.body.velocity.x = 400;      //  Give it a push :) just for fun
+        newRect.body.mass = length / i;     //  Reduce mass for evey rope element
+    }
+
+    //  After the first rectangle is created we can add the constraint
+    if (lastRect)
+    {
+        game.physics.p2.createRevoluteConstraint(newRect, [0, -10], lastRect, [0, 10], maxForce);
+    }
+
+    lastRect = newRect;
+  }
+}
 
 var w = 160 * 4;
 var h = 144 * 4;
