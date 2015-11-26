@@ -16,9 +16,10 @@ PlayState.prototype.preload = function() {
   game.load.image('tileset', 'assets/graphics/_tileset.png');
 
   game.load.spritesheet('player', 'assets/graphics/_player.png', 10*2, 16*2);
-  game.load.spritesheet('sword', 'assets/graphics/_sword.png', 17*2, 16*2);
+  game.load.spritesheet('player_sword', 'assets/graphics/_sword.png', 17*2, 16*2);
+  game.load.image('sword', 'assets/graphics/_raw_sword.png');
 
-  game.load.spritesheet('chain', 'assets/graphics/_chain_segment.png', 5*2, 5*2);
+  game.load.image('chain', 'assets/graphics/_chain_segment.png')
 
   game.load.image('textbox', 'assets/graphics/_textbox.png');
 
@@ -36,12 +37,17 @@ PlayState.prototype.create = function() {
   game.physics.startSystem(Phaser.Physics.P2JS);
   game.physics.p2.gravity.y = 1350;
   game.physics.p2.restitution = 0.1
-  game.physics.p2.world.defaultContactMaterial.friction = 1.75
+  game.physics.p2.world.defaultContactMaterial.friction = 0.5
   game.physics.p2.world.setGlobalStiffness(1e5);
   // game.physics.p2.TILE_BIAS = 40;
 
   game.gun = game.add.audio('gun');
   game.jump = game.add.audio('jump');
+
+  this.dustCollisionGroup = game.physics.p2.createCollisionGroup();
+  this.chainCollisionGroup = game.physics.p2.createCollisionGroup();
+  this.playerCollisionGroup = game.physics.p2.createCollisionGroup();
+  this.groundCollisionGroup = game.physics.p2.createCollisionGroup();
 
   this.map = game.add.tilemap('level1');
   this.map.addTilesetImage('_tileset', 'tileset');
@@ -49,20 +55,27 @@ PlayState.prototype.create = function() {
 
   var stars = game.add.group();
 
+  this.groundMaterial = game.physics.p2.createMaterial('ground');
+  this.playerMaterial = game.physics.p2.createMaterial('player');
+  var groundPlayerCM = game.physics.p2.createContactMaterial(this.groundMaterial, this.playerMaterial)
+  groundPlayerCM.friction = 1.0
+  // groundPlayerCM.stiffness = 1e7
+  var groundChainCM = game.physics.p2.createContactMaterial(this.chainMaterial, this.groundMaterial)
+  groundChainCM.friction = 0.5
+
   this.fg = this.map.createLayer('FG');
   this.map.setCollisionBetween(1, 300, true, this.fg);
   this.fg.resizeWorld();
-  game.physics.p2.convertTilemap(this.map, this.fg)
+  var tiles = game.physics.p2.convertTilemap(this.map, this.fg)
+  var that = this
+  tiles.forEach(function (tile) {
+    tile.setCollisionGroup(that.groundCollisionGroup)
+    tile.collides([that.playerCollisionGroup, that.chainCollisionGroup])
+    tile.setMaterial(that.groundMaterial)
+  })
   game.physics.p2.setBoundsToWorld(true, true, true, true, false)
 
-  this.groundMaterial = game.physics.p2.createMaterial('ground');
-  this.playerMaterial = game.physics.p2.createMaterial('player');
-
-  var groundPlayerCM = game.physics.p2.createContactMaterial(
-      this.playerMaterial, this.groundMaterial, { friction: 0.0 });
-
   game.physics.p2.setWorldMaterial(this.groundMaterial, true, true, true, true);
-
 
   // for(var y = 0; y < this.fg.height; ++y){
   //   for(var x = 0; x < this.fg.width; ++x){
@@ -92,7 +105,6 @@ PlayState.prototype.create = function() {
 
   // Dust clouds
   this.dust = game.add.group();
-  this.dustCollisionGroup = game.physics.p2.createCollisionGroup();
 
   chains = game.add.group();
 
@@ -103,11 +115,14 @@ PlayState.prototype.create = function() {
   player.animations.play('idle');
   player.anchor.set(0.4, 0.5);
   game.physics.p2.enable(player);
-  player.body.fixedRotation = true
-  // player.body.debug = true
-  player.body.collideWorldBounds = true;
   player.body.setMaterial(this.playerMaterial)
-  player.walkForce = 150;
+  player.body.fixedRotation = true
+  player.body.setCollisionGroup(this.playerCollisionGroup)
+  player.body.collides([this.groundCollisionGroup])
+  // player.body.debug = true
+  player.body.mass = 10
+  player.body.collideWorldBounds = true;
+  player.walkForce = 30000;
   player.jumpForce = 460;
   player.fireDelay = 150;
   player.fireCountdown = 0;
@@ -116,16 +131,16 @@ PlayState.prototype.create = function() {
   this.player = player;
 
   player.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
-    if (shapeB.material == null) {
+      if (shapeB.material.name == 'ground') {
       if (this.body.velocity.y < -10 && this.body.velocity.y > -40) {
         game.state.getCurrentState().spawnLandingDust(this.x, this.y + this.height * 0.5 - 4)
       }
     }
-    // console.log(shapeA)
-    // console.log(shapeB)
+    // console.log(shapeA.material)
+    // console.log(shapeB.material)
   }, player)
 
-  var sword = game.add.sprite(16*2, 96*2, 'sword');
+  var sword = game.add.sprite(16*2, 96*2, 'player_sword');
   sword.animations.add('idle', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 10, true);
   sword.animations.add('jump_upward', [2], 10, false);
   sword.animations.add('jump_downward', [3], 10, false);
@@ -174,6 +189,8 @@ PlayState.prototype.create = function() {
   };
 
   player.update = function() {
+    player.sword.visible = !this.chain
+
     if (this.canJump()) {
       player.animations.play('idle');
       player.sword.animations.play('idle');
@@ -190,47 +207,82 @@ PlayState.prototype.create = function() {
   };
 
   player.shootChain = function(dirX, dirY) {
-    var segs = []
-    for (var i=0; i < 10; i++) {
-      var chain = chains.create(player.x + i*10, player.y, 'chain');
-      chain.tint = player.team
-      game.physics.p2.enable(chain);
-      chain.body.allowGravity = true;
-      chain.anchor.set(0.5, 0.5);
+    var lastSeg;
+    var height = 5
+    var width = 10
+    var maxForce = 2000000
+    var length = 10
+    var state = game.state.getCurrentState()
 
-      chain.links = []
-
-      chain.update = function() {
-        for (var j in this.links) {
-          var link = this.links[j]
-          var dx = link.x - this.x
-          var dy = link.y - this.y
-          var dist = Math.sqrt(dx*dx + dy*dy)
-          var ideal_distance = 8
-          var k = 0.5
-          if (dist > ideal_distance) {
-            this.body.velocity.x += dx * k
-            this.body.velocity.y += dy * k
-          }
-          if (dist < ideal_distance) {
-            this.body.velocity.x += -dx * k
-            this.body.velocity.y += -dy * k
-          }
-        }
-        // this.body.velocity.x *= 0.8
-        // this.body.velocity.y *= 0.8
-      };
-
-      segs[i] = chain
-      if (i > 0) {
-        chain.links.push(segs[i-1])
-        segs[i-1].links.push(chain)
+    // sword
+    var sword = game.add.sprite(this.x, this.y, 'sword')
+    game.physics.p2.enable(sword, false);
+    sword.body.mass = 200
+    sword.body.setCollisionGroup(state.chainCollisionGroup)
+    sword.body.collides([state.groundCollisionGroup])
+    sword.tint = this.team
+    sword.body.allowGravity = false
+    sword.body.fixedRotation = true
+    sword.done = false
+    sword.update = function () {
+      if (!this.hitGround) {
+        sword.body.velocity.x = 450
+        sword.body.moveUp(30)
       }
     }
-    segs[9].body.velocity.x = dirX * 20;
-    segs[9].body.velocity.y = dirY * 20;
-    player.chain = {
-      segs: segs
+    sword.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
+      if (!this.done && !this.hitGround && shapeB.material.name == 'ground') {
+        this.hitGround = true
+        this.body.velocity.x = 0
+        game.state.getCurrentState().spawnOmniDust(this.x, this.y)
+        // this.body.static = true
+        this.lock = game.physics.p2.createRevoluteConstraint(this.body, [0, 0], body, [0, 0], 1000000);
+        this.done = true
+      }
+    }, sword)
+
+    var firstSegJoint = null
+    var lastSegJoint = null
+
+    for (var i = 0; i <= length; i++)
+    {
+      var x = this.x + this.width * 0.5 + i
+      var y = this.y
+
+      newSeg = game.add.sprite(x, y, 'chain')
+      game.physics.p2.enable(newSeg, false);
+      // newSeg.body.setCircle(5)
+      newSeg.body.setMaterial(state.chainMaterial)
+      newSeg.body.setCollisionGroup(state.chainCollisionGroup)
+      newSeg.body.collides([state.groundCollisionGroup])
+      newSeg.tint = this.team
+      // newSeg.body.debug = true
+
+      if (i === 0) {
+        firstSegJoint = game.physics.p2.createRevoluteConstraint(newSeg, [0, -width], sword, [-8, 0], maxForce);
+        newSeg.body.mass = 1
+      }
+      else {  
+        newSeg.body.mass = 1 / i
+      }
+      newSeg.body.mass = 1
+
+      if (lastSeg) {
+        game.physics.p2.createRevoluteConstraint(newSeg, [0, -width], lastSeg, [0, width], maxForce);
+      }
+
+      if (i == length) {
+        lastSegJoint = game.physics.p2.createRevoluteConstraint(newSeg, [0, width], player, [-width, 0], maxForce);
+      }
+
+      lastSeg = newSeg;
+    }
+
+    player.chain = {}
+    player.chain.detach = function () {
+      game.physics.p2.removeConstraint(sword.lock)
+      sword.body.mass = 5
+      sword.body.fixedRotation = false
     }
   };
 };
@@ -238,17 +290,17 @@ PlayState.prototype.create = function() {
 
 PlayState.prototype.update = function() {
 
-  if (game.input.keyboard.isDown(Phaser.Keyboard.LEFT)) {
-    // this.player.body.velocity.x = -this.player.walkForce;
-    this.player.body.moveLeft(this.player.walkForce)
+  if (game.input.keyboard.isDown(Phaser.Keyboard.LEFT) && this.player.body.velocity.x < 6) {
+    this.player.body.force.x = -this.player.walkForce;
     this.player.scale.x = -1;
     this.player.sword.scale.x = -1;
   }
-  if (game.input.keyboard.isDown(Phaser.Keyboard.RIGHT)) {
-    // this.player.body.velocity.x = this.player.walkForce;
-    this.player.body.moveRight(this.player.walkForce)
+  else if (game.input.keyboard.isDown(Phaser.Keyboard.RIGHT) && this.player.body.velocity.x > -6) {
+    this.player.body.force.x = this.player.walkForce;
     this.player.scale.x = 1;
     this.player.sword.scale.x = 1;
+  } else {
+    this.player.body.force.x = 0
   }
 
   this.player.update();
@@ -259,6 +311,8 @@ PlayState.prototype.update = function() {
           this.player.x - 50 : this.player.x + 35, 0)
       this.player.fireCountdown = this.player.fireDelay;
       game.gun.play();
+    } else if (this.player.fireCountdown <= 0) {
+      this.player.chain.detach()
     }
   }
   this.player.fireCountdown -= game.time.elapsed;
@@ -317,11 +371,20 @@ PlayState.prototype.spawnLandingDust = function(x, y) {
   }
 }
 
+PlayState.prototype.spawnOmniDust = function(x, y) {
+  for (var i=0; i < 6; i++) {
+    var dust = game.state.getCurrentState().spawnDust(x, y)
+    var ang = Math.random() * Math.PI * 2
+    dust.body.velocity.x = Math.cos(ang) * game.rnd.between(25, 50)
+    dust.body.velocity.y = Math.sin(ang) * game.rnd.between(25, 50)
+  }
+}
+
 // based on example code from http://phaser.io/examples/v2/p2-physics/chain
 PlayState.prototype.createRope = function (length, xAnchor, yAnchor) {
   var lastRect;
-  var height = 20;        //  Height for the physics body - your image height is 8px
-  var width = 16;         //  This is the width for the physics body. If too small the rectangles will get scrambled together.
+  var height = 4;        //  Height for the physics body - your image height is 8px
+  var width = 4;         //  This is the width for the physics body. If too small the rectangles will get scrambled together.
   var maxForce = 20000;   //  The force that holds the rectangles together.
 
   for (var i = 0; i <= length; i++)
@@ -339,19 +402,19 @@ PlayState.prototype.createRope = function (length, xAnchor, yAnchor) {
 
     if (i === 0)
     {
-        newRect.body.static = true;
+        // newRect.body.static = true;
     }
     else
     {  
         //  Anchor the first one created
-        newRect.body.velocity.x = 400;      //  Give it a push :) just for fun
+        newRect.body.velocity.x = -40;      //  Give it a push :) just for fun
         newRect.body.mass = length / i;     //  Reduce mass for evey rope element
     }
 
     //  After the first rectangle is created we can add the constraint
     if (lastRect)
     {
-        game.physics.p2.createRevoluteConstraint(newRect, [0, -10], lastRect, [0, 10], maxForce);
+        game.physics.p2.createRevoluteConstraint(newRect, [0, -5], lastRect, [0, 5], maxForce);
     }
 
     lastRect = newRect;
