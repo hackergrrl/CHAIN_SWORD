@@ -15,7 +15,7 @@ PlayState.prototype.preload = function() {
   game.load.tilemap('level1', 'assets/maps/test.json', null, Phaser.Tilemap.TILED_JSON);
   game.load.image('tileset', 'assets/graphics/_tileset.png');
 
-  game.load.spritesheet('player', 'assets/graphics/_player.png', 17*2, 16*2);
+  game.load.spritesheet('player', 'assets/graphics/_player.png', 10*2, 16*2);
   game.load.spritesheet('sword', 'assets/graphics/_sword.png', 17*2, 16*2);
 
   game.load.spritesheet('chain', 'assets/graphics/_chain_segment.png', 5*2, 5*2);
@@ -104,12 +104,9 @@ PlayState.prototype.create = function() {
   player.anchor.set(0.4, 0.5);
   game.physics.p2.enable(player);
   player.body.fixedRotation = true
-  // player.body.bounce.set(0.1, 0.03);
+  // player.body.debug = true
   player.body.collideWorldBounds = true;
   player.body.setMaterial(this.playerMaterial)
-  // player.body.drag.set(2000, 0);
-  // player.body.maxVelocity.x = 150;
-  // player.body.setSize(8*2, 12*2, 0*2, 2*2);
   player.walkForce = 150;
   player.jumpForce = 460;
   player.fireDelay = 150;
