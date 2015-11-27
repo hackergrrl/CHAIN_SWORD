@@ -64,7 +64,7 @@ PlayState.prototype.create = function() {
   groundChainCM.friction = 0.5
 
   this.fg = this.map.createLayer('FG');
-  this.map.setCollisionBetween(1, 300, true, this.fg);
+  this.map.setCollisionBetween(1, 400, true, this.fg);
   this.fg.resizeWorld();
   var tiles = game.physics.p2.convertTilemap(this.map, this.fg)
   var that = this
@@ -183,7 +183,7 @@ PlayState.prototype.create = function() {
       this.body.moveUp(this.jumpForce)
       // this.body.velocity.y = -this.jumpForce;
       this.jumpCountdown = 500
-      game.jump.play();
+      // game.jump.play();
       game.state.getCurrentState().spawnJumpDust(this.x, this.y + this.height * 0.5)
     }
   };
@@ -216,11 +216,11 @@ PlayState.prototype.create = function() {
       }
       var front = this.chain.segs[this.chain.front].link
       var angle = game.math.angleBetween(front.x, front.y, this.x, this.y)
-      front.body.force.x = Math.cos(angle) * 40000
-      front.body.force.y = Math.sin(angle) * 40000
+      front.body.force.x = Math.cos(angle) * 20000
+      front.body.force.y = Math.sin(angle) * 20000
       var dist = game.math.distance(this.x, this.y, front.x, front.y)
       // console.log(this.chain.front, dist)
-      if (game.math.distance(this.x, this.y, front.x, front.y) < 24) {
+      if (game.math.distance(this.x, this.y, front.x, front.y) < 18) {
         game.physics.p2.removeConstraint(front.joint)
         front.kill()
         this.chain.front--
@@ -245,6 +245,7 @@ PlayState.prototype.create = function() {
     sword.body.setCollisionGroup(state.chainCollisionGroup)
     sword.body.collides([state.groundCollisionGroup])
     sword.anchor.set(0.5, 0.5)
+    sword.scale.x = this.scale.x
     sword.tint = this.team
     sword.body.allowGravity = false
     sword.body.fixedRotation = true
@@ -370,7 +371,7 @@ PlayState.prototype.update = function() {
     if (!this.player.chain) {
       this.player.shootChain(this.player.scale.x, 0)
       this.player.fireCountdown = this.player.fireDelay;
-      game.gun.play();
+      // game.gun.play();
     } else if (this.player.chain && !this.player.retractSword && this.player.fireCountdown <= 0) {
       this.player.chain.detach()
     }
