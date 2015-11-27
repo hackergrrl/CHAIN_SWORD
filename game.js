@@ -220,7 +220,7 @@ PlayState.prototype.create = function() {
       front.body.force.y = Math.sin(angle) * 40000
       var dist = game.math.distance(this.x, this.y, front.x, front.y)
       // console.log(this.chain.front, dist)
-      if (game.math.distance(this.x, this.y, front.x, front.y) < 10) {
+      if (game.math.distance(this.x, this.y, front.x, front.y) < 24) {
         game.physics.p2.removeConstraint(front.joint)
         front.kill()
         this.chain.front--
