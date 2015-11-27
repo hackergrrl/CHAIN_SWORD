@@ -204,6 +204,30 @@ PlayState.prototype.create = function() {
 
     player.sword.x = player.x - player.anchor.x * player.width + player.body.velocity.x * game.time.physicsElapsed
     player.sword.y = player.y - player.anchor.y * player.height + player.body.velocity.y * game.time.physicsElapsed
+
+    // reel sword back in
+    if (this.retractSword) {
+      if (this.chain.front < 0) {
+        game.physics.p2.removeConstraint(this.chain.segs[this.chain.segs.length-1].joint)
+        player.chain.sword.kill()
+        player.chain = null
+        this.retractSword = false
+        return
+      }
+      var front = this.chain.segs[this.chain.front].link
+      var angle = game.math.angleBetween(front.x, front.y, this.x, this.y)
+      front.body.force.x = Math.cos(angle) * 40000
+      front.body.force.y = Math.sin(angle) * 40000
+      var dist = game.math.distance(this.x, this.y, front.x, front.y)
+      // console.log(this.chain.front, dist)
+      if (game.math.distance(this.x, this.y, front.x, front.y) < 10) {
+        game.physics.p2.removeConstraint(front.joint)
+        front.kill()
+        this.chain.front--
+        // if (seg.link) {
+        //   front.joint = game.physics.p2.createRevoluteConstraint(seg.link, [0, 0], player, [0, 0], maxForce)
+      }
+    }
   };
 
   player.shootChain = function(dirX, dirY) {
@@ -220,13 +244,14 @@ PlayState.prototype.create = function() {
     sword.body.mass = 200
     sword.body.setCollisionGroup(state.chainCollisionGroup)
     sword.body.collides([state.groundCollisionGroup])
+    sword.anchor.set(0.5, 0.5)
     sword.tint = this.team
     sword.body.allowGravity = false
     sword.body.fixedRotation = true
     sword.done = false
     sword.update = function () {
       if (!this.hitGround) {
-        sword.body.velocity.x = 450
+        sword.body.velocity.x = 450 * dirX
         sword.body.moveUp(30)
       }
     }
@@ -235,14 +260,14 @@ PlayState.prototype.create = function() {
         this.hitGround = true
         this.body.velocity.x = 0
         game.state.getCurrentState().spawnOmniDust(this.x, this.y)
-        // this.body.static = true
         this.lock = game.physics.p2.createRevoluteConstraint(this.body, [0, 0], body, [0, 0], 1000000);
+        this.body.allowGravity = true
         this.done = true
       }
     }, sword)
 
-    var firstSegJoint = null
-    var lastSegJoint = null
+    var segs = []
+    var plrJoint
 
     for (var i = 0; i <= length; i++)
     {
@@ -259,7 +284,7 @@ PlayState.prototype.create = function() {
       // newSeg.body.debug = true
 
       if (i === 0) {
-        firstSegJoint = game.physics.p2.createRevoluteConstraint(newSeg, [0, -width], sword, [-8, 0], maxForce);
+        joint = game.physics.p2.createRevoluteConstraint(newSeg, [0, -width], sword, [-8, 0], maxForce);
         newSeg.body.mass = 1
       }
       else {  
@@ -267,22 +292,58 @@ PlayState.prototype.create = function() {
       }
       newSeg.body.mass = 1
 
+      var joint = null
+
       if (lastSeg) {
-        game.physics.p2.createRevoluteConstraint(newSeg, [0, -width], lastSeg, [0, width], maxForce);
+        joint = game.physics.p2.createRevoluteConstraint(newSeg, [0, -width], lastSeg, [0, width], maxForce);
       }
 
       if (i == length) {
-        lastSegJoint = game.physics.p2.createRevoluteConstraint(newSeg, [0, width], player, [-width, 0], maxForce);
+        segs[length+1] = {
+          link: null,
+          joint: game.physics.p2.createRevoluteConstraint(newSeg, [0, width], player, [-width, 0], maxForce)
+        }
+      }
+
+      segs[i] = {
+        link: newSeg,
+        joint: joint
       }
 
       lastSeg = newSeg;
     }
 
     player.chain = {}
+    player.chain.segs = segs
+    player.chain.front = length
+    player.chain.sword = sword
     player.chain.detach = function () {
       game.physics.p2.removeConstraint(sword.lock)
+      sword.lock = null
       sword.body.mass = 5
       sword.body.fixedRotation = false
+      sword.body.allowGravity = true
+
+      player.retractSword = true
+
+      // // remove links one by one
+      // var delay = 0
+      // for (var i=length+1; i > 0; i--) {
+      //   var lastSeg = segs[i-1]
+      //   var seg = segs[i];
+      //   (function (lastSeg, seg) {
+      //     // console.log('1', i, delay)
+      //     game.time.events.add(delay, function() {
+      //       game.physics.p2.removeConstraint(lastSeg.joint)
+      //       game.physics.p2.removeConstraint(seg.joint)
+      //       lastSeg.link.kill()
+      //       if (seg.link) {
+      //         seg.joint = game.physics.p2.createRevoluteConstraint(seg.link, [0, 0], player, [0, 0], maxForce)
+      //       }
+      //     })
+      //   })(lastSeg, seg);
+      //   delay += 1000
+      // }
     }
   };
 };
@@ -307,11 +368,10 @@ PlayState.prototype.update = function() {
 
   if (game.input.keyboard.justPressed(Phaser.Keyboard.SPACEBAR)) {
     if (!this.player.chain) {
-      this.player.shootChain(this.player.scale.x === -1 ?
-          this.player.x - 50 : this.player.x + 35, 0)
+      this.player.shootChain(this.player.scale.x, 0)
       this.player.fireCountdown = this.player.fireDelay;
       game.gun.play();
-    } else if (this.player.fireCountdown <= 0) {
+    } else if (this.player.chain && !this.player.retractSword && this.player.fireCountdown <= 0) {
       this.player.chain.detach()
     }
   }
