@@ -1,6 +1,16 @@
 // so fight me, pff
 var chains
 
+var worldBody
+
+var Throw = {
+  Ready: 1,
+  Thrown: 2,
+  Locked: 3,
+  PullingSelf: 4,
+  PullingSword: 5,
+}
+
 function PlayState(game) {
 }
 
@@ -72,6 +82,7 @@ PlayState.prototype.create = function() {
     tile.setCollisionGroup(that.groundCollisionGroup)
     tile.collides([that.playerCollisionGroup, that.chainCollisionGroup])
     tile.setMaterial(that.groundMaterial)
+    // tile.debug = true
   })
   game.physics.p2.setBoundsToWorld(true, true, true, true, false)
 
@@ -108,7 +119,13 @@ PlayState.prototype.create = function() {
 
   chains = game.add.group();
 
+  worldBody = game.add.sprite(0, 0, 'star_small')
+  game.physics.p2.enable(worldBody);
+  worldBody.body.static = true
+  worldBody.body.debug = true
+
   var player = game.add.sprite(16*3, 136*2, 'player');
+  player.swordState = Throw.Ready
   player.animations.add('idle', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 10, true);
   player.animations.add('jump_upward', [2], 10, false);
   player.animations.add('jump_downward', [3], 10, false);
@@ -189,7 +206,7 @@ PlayState.prototype.create = function() {
   };
 
   player.update = function() {
-    player.sword.visible = !this.chain
+    player.sword.visible = (this.swordState === Throw.Ready)
 
     if (this.canJump()) {
       player.animations.play('idle');
@@ -206,26 +223,33 @@ PlayState.prototype.create = function() {
     player.sword.y = player.y - player.anchor.y * player.height + player.body.velocity.y * game.time.physicsElapsed
 
     // reel sword back in
-    if (this.retractSword) {
+    if (this.swordState === Throw.PullingSelf || this.swordState === Throw.PullingSword) {
       if (this.chain.front < 0) {
         game.physics.p2.removeConstraint(this.chain.segs[this.chain.segs.length-1].joint)
         player.chain.sword.kill()
         player.chain = null
         this.retractSword = false
+        player.swordState = Throw.Ready
         return
       }
       var front = this.chain.segs[this.chain.front].link
-      var angle = game.math.angleBetween(front.x, front.y, this.x, this.y)
-      front.body.force.x = Math.cos(angle) * 20000
-      front.body.force.y = Math.sin(angle) * 20000
+      if (player.swordState === Throw.PullingSelf) {
+        var angle = game.math.angleBetween(this.x, this.y, front.x, front.y)
+        var pullForce = 30000
+        player.body.force.x = Math.cos(angle) * pullForce
+        player.body.force.y = Math.sin(angle) * pullForce
+      } else if (player.swordState === Throw.PullingSword) {
+        var angle = game.math.angleBetween(front.x, front.y, this.x, this.y)
+        var pullForce = 30000
+        front.body.force.x = Math.cos(angle) * pullForce
+        front.body.force.y = Math.sin(angle) * pullForce
+      }
       var dist = game.math.distance(this.x, this.y, front.x, front.y)
       // console.log(this.chain.front, dist)
-      if (game.math.distance(this.x, this.y, front.x, front.y) < 18) {
+      if (game.math.distance(this.x, this.y, front.x, front.y) < 21) {
         game.physics.p2.removeConstraint(front.joint)
         front.kill()
         this.chain.front--
-        // if (seg.link) {
-        //   front.joint = game.physics.p2.createRevoluteConstraint(seg.link, [0, 0], player, [0, 0], maxForce)
       }
     }
   };
@@ -235,8 +259,10 @@ PlayState.prototype.create = function() {
     var height = 5
     var width = 10
     var maxForce = 2000000
-    var length = 10
+    var length = 15
     var state = game.state.getCurrentState()
+
+    this.swordState = Throw.Thrown
 
     // sword
     var sword = game.add.sprite(this.x, this.y, 'sword')
@@ -252,18 +278,22 @@ PlayState.prototype.create = function() {
     sword.done = false
     sword.update = function () {
       if (!this.hitGround) {
-        sword.body.velocity.x = 450 * dirX
-        sword.body.moveUp(30)
+        // sword.body.velocity.x = 450 * dirX
+        // sword.body.velocity.y = 450 * dirY
+        // sword.body.moveUp(30)
+        sword.body.moveRight(450 * dirX)
+        sword.body.moveDown(450 * dirY)
       }
     }
     sword.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
       if (!this.done && !this.hitGround && shapeB.material.name == 'ground') {
         this.hitGround = true
-        this.body.velocity.x = 0
         game.state.getCurrentState().spawnOmniDust(this.x, this.y)
-        this.lock = game.physics.p2.createRevoluteConstraint(this.body, [0, 0], body, [0, 0], 1000000);
+        var maxForce = 2000000
+        this.lock = game.physics.p2.createRevoluteConstraint(this.body, [0, 0], worldBody, [this.x, this.y], maxForce);
         this.body.allowGravity = true
         this.done = true
+        player.swordState = Throw.Locked
       }
     }, sword)
 
@@ -318,33 +348,21 @@ PlayState.prototype.create = function() {
     player.chain.segs = segs
     player.chain.front = length
     player.chain.sword = sword
+    player.chain.reelIn = function () {
+      player.retractSword = true
+      player.swordState = Throw.PullingSelf
+    }
     player.chain.detach = function () {
       game.physics.p2.removeConstraint(sword.lock)
       sword.lock = null
       sword.body.mass = 5
       sword.body.fixedRotation = false
       sword.body.allowGravity = true
+      player.swordState = Throw.PullingSword
+    }
 
-      player.retractSword = true
-
-      // // remove links one by one
-      // var delay = 0
-      // for (var i=length+1; i > 0; i--) {
-      //   var lastSeg = segs[i-1]
-      //   var seg = segs[i];
-      //   (function (lastSeg, seg) {
-      //     // console.log('1', i, delay)
-      //     game.time.events.add(delay, function() {
-      //       game.physics.p2.removeConstraint(lastSeg.joint)
-      //       game.physics.p2.removeConstraint(seg.joint)
-      //       lastSeg.link.kill()
-      //       if (seg.link) {
-      //         seg.joint = game.physics.p2.createRevoluteConstraint(seg.link, [0, 0], player, [0, 0], maxForce)
-      //       }
-      //     })
-      //   })(lastSeg, seg);
-      //   delay += 1000
-      // }
+    if (dirY === -1) {
+      sword.angle = -90
     }
   };
 };
@@ -367,19 +385,37 @@ PlayState.prototype.update = function() {
 
   this.player.update();
 
-  if (game.input.keyboard.justPressed(Phaser.Keyboard.SPACEBAR)) {
-    if (!this.player.chain) {
-      this.player.shootChain(this.player.scale.x, 0)
+  // Detach sword from target
+  if (game.input.keyboard.justReleased(Phaser.Keyboard.X)) {
+    if (this.player.swordState === Throw.PullingSelf || this.player.swordState === Throw.PullingSword) {
+      this.player.chain.detach()
+    }
+  }
+
+  if (game.input.keyboard.justPressed(Phaser.Keyboard.X)) {
+    // Throw sword
+    if (this.player.swordState === Throw.Ready) {
+      var dirX = this.player.scale.x
+      var dirY = 0
+      if (game.input.keyboard.isDown(Phaser.Keyboard.UP)) {
+        dirY = -1
+        dirX = 0
+      }
+      if (game.input.keyboard.isDown(Phaser.Keyboard.DOWN)) {
+        dirY = 1
+        dirX = 0
+      }
+      this.player.shootChain(dirX, dirY)
       this.player.fireCountdown = this.player.fireDelay;
       // game.gun.play();
-    } else if (this.player.chain && !this.player.retractSword && this.player.fireCountdown <= 0) {
-      this.player.chain.detach()
+    } else if (this.player.swordState === Throw.Locked && this.player.fireCountdown <= 0) {
+      this.player.chain.reelIn()
     }
   }
   this.player.fireCountdown -= game.time.elapsed;
   this.player.jumpCountdown -= game.time.elapsed;
 
-  if (game.input.keyboard.isDown(Phaser.Keyboard.UP)) {
+  if (game.input.keyboard.isDown(Phaser.Keyboard.Z)) {
     this.player.jump();
   }
 
@@ -438,47 +474,6 @@ PlayState.prototype.spawnOmniDust = function(x, y) {
     var ang = Math.random() * Math.PI * 2
     dust.body.velocity.x = Math.cos(ang) * game.rnd.between(25, 50)
     dust.body.velocity.y = Math.sin(ang) * game.rnd.between(25, 50)
-  }
-}
-
-// based on example code from http://phaser.io/examples/v2/p2-physics/chain
-PlayState.prototype.createRope = function (length, xAnchor, yAnchor) {
-  var lastRect;
-  var height = 4;        //  Height for the physics body - your image height is 8px
-  var width = 4;         //  This is the width for the physics body. If too small the rectangles will get scrambled together.
-  var maxForce = 20000;   //  The force that holds the rectangles together.
-
-  for (var i = 0; i <= length; i++)
-  {
-    var x = xAnchor;                    //  All rects are on the same x position
-    var y = yAnchor + (i * height);     //  Every new rect is positioned below the last
-
-    newRect = game.add.sprite(x, y, 'chain')
-
-    //  Enable physicsbody
-    game.physics.p2.enable(newRect, false);
-
-    //  Set custom rectangle
-    newRect.body.setRectangle(width, height);
-
-    if (i === 0)
-    {
-        // newRect.body.static = true;
-    }
-    else
-    {  
-        //  Anchor the first one created
-        newRect.body.velocity.x = -40;      //  Give it a push :) just for fun
-        newRect.body.mass = length / i;     //  Reduce mass for evey rope element
-    }
-
-    //  After the first rectangle is created we can add the constraint
-    if (lastRect)
-    {
-        game.physics.p2.createRevoluteConstraint(newRect, [0, -5], lastRect, [0, 5], maxForce);
-    }
-
-    lastRect = newRect;
   }
 }
 
