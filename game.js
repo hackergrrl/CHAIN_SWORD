@@ -22,7 +22,7 @@ PlayState.prototype.preload = function() {
 
   game.load.spritesheet('dust', 'assets/graphics/_dust.png', 8, 8);
 
-  game.load.tilemap('level1', 'assets/maps/test.json', null, Phaser.Tilemap.TILED_JSON);
+  game.load.tilemap('level1', 'assets/maps/sgunn.json', null, Phaser.Tilemap.TILED_JSON);
   game.load.image('tileset', 'assets/graphics/_tileset.png');
 
   game.load.spritesheet('player', 'assets/graphics/_player.png', 10*2, 16*2);
@@ -482,3 +482,6 @@ var h = 144 * 4;
 var game = new Phaser.Game(w, h, Phaser.AUTO, 'monochain');
 game.state.add('play', PlayState);
 game.state.start('play');
+
+// samurai gunn: 22x16
+
