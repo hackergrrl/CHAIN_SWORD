@@ -238,15 +238,17 @@ PlayState.prototype.create = function() {
       if (player.swordState === Throw.PullingSelf) {
         player.pullAccum += 10
         var angle = game.math.angleBetween(this.x, this.y, sword.x, sword.y)
-        var pullForce = Math.min(650, player.pullAccum)
-        pullForce = 25000
-        player.body.force.x += Math.cos(angle) * pullForce
-        player.body.force.y += Math.sin(angle) * pullForce
-        // player.body.moveRight(Math.cos(angle) * pullForce)
-        // player.body.moveDown(Math.sin(angle) * pullForce)
+        var pullForce = Math.min(550, player.pullAccum)
+        if (pullForce < 100) {
+          pullForce = 0
+        }
+        // player.body.force.x += Math.cos(angle) * pullForce
+        // player.body.force.y += Math.sin(angle) * pullForce
+        player.body.moveRight(Math.cos(angle) * pullForce)
+        player.body.moveDown(Math.sin(angle) * pullForce)
       } else if (player.swordState === Throw.PullingSword) {
         var angle = game.math.angleBetween(sword.x, sword.y, this.x, this.y)
-        var pullForce = 650
+        var pullForce = 750
         sword.body.moveRight(Math.cos(angle) * pullForce)
         sword.body.moveDown(Math.sin(angle) * pullForce)
       }
@@ -277,7 +279,7 @@ PlayState.prototype.create = function() {
     sword.body.mass = 200
     sword.body.setCollisionGroup(state.chainCollisionGroup)
     sword.body.collides([state.groundCollisionGroup])
-    sword.anchor.set(0.2, 0.5)
+    sword.anchor.set(0, 0.5)
     sword.scale.x = this.scale.x
     sword.tint = this.team
     sword.body.allowGravity = false
@@ -287,13 +289,12 @@ PlayState.prototype.create = function() {
     // sword.body.velocity.y = 750 * dirY
     sword.update = function () {
       if (!this.hitGround) {
-        sword.rotation = Math.atan2(this.body.velocity.y, this.body.velocity.x)
+        // sword.rotation = Math.atan2(this.body.velocity.y, this.body.velocity.x)
       // var angle = game.math.angleBetween(sword.x, sword.y, player.x, player.y)
         // sword.body.velocity.x = 450 * dirX
         // sword.body.velocity.y = 450 * dirY
-        // sword.body.moveUp(30)
-        sword.body.moveRight(750 * dirX)
-        sword.body.moveDown(750 * dirY)
+        sword.body.moveRight(950 * dirX)
+        sword.body.moveDown(950 * dirY - 30)
       }
     }
     sword.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
@@ -301,7 +302,7 @@ PlayState.prototype.create = function() {
         this.hitGround = true
         game.state.getCurrentState().spawnOmniDust(this.x, this.y)
         var maxForce = 2000000
-        this.lock = game.physics.p2.createRevoluteConstraint(this.body, [0, -10], worldBody, [this.x, this.y], maxForce);
+        this.lock = game.physics.p2.createRevoluteConstraint(this.body, [0, 0], worldBody, [this.x - dirX * 16, this.y - dirY * 16], maxForce);
         this.body.allowGravity = false
         this.done = true
         player.swordState = Throw.Locked
@@ -311,7 +312,7 @@ PlayState.prototype.create = function() {
     // var pt1 = new Phaser.Point(player.x, player.y)
     // var pt2 = new Phaser.Point(player.x, player.y)
     // var chain = game.add.rope(player.x, player.y, 'chain', null, [pt1, pt2])
-    var chain = this.game.add.tileSprite(player.x, player.y, 128, 8, 'chain');
+    var chain = this.game.add.tileSprite(player.x, player.y, 128, 9, 'chain');
     chain.anchor.set(0, 0.5)
     chain.tint = player.team
 
@@ -327,24 +328,19 @@ PlayState.prototype.create = function() {
       game.physics.p2.removeConstraint(sword.lock)
       sword.lock = null
       sword.body.mass = 5
-      sword.body.fixedRotation = false
+      sword.body.fixedRotation = true
       sword.body.allowGravity = true
-      // sword.body.angularVelocity = 10
       player.swordState = Throw.PullingSword
 
       sword.body.collides([])
-      // var angle = game.math.angleBetween(sword.x, sword.y, player.x, player.y)
-      // var pullForce = 100
-      // sword.x += Math.cos(angle) * pullForce
-      // sword.y += Math.sin(angle) * pullForce
     }
 
-    if (dirY === -1) {
+    if (dirY < 0) {
       sword.angle = -90
     }
-    // if (dirY === 1) {
-    //   sword.angle = 90
-    // }
+    if (dirY > 0) {
+      sword.angle = 90
+    }
   };
 };
 
@@ -373,7 +369,7 @@ PlayState.prototype.update = function() {
     }
   }
 
-  if (game.input.keyboard.isDown(Phaser.Keyboard.X)) {
+  if (game.input.keyboard.justPressed(Phaser.Keyboard.X)) {
     // Throw sword
     if (this.player.swordState === Throw.Ready) {
       var dirX = this.player.scale.x
@@ -389,7 +385,11 @@ PlayState.prototype.update = function() {
       this.player.shootChain(dirX, dirY)
       this.player.fireCountdown = this.player.fireDelay;
       // game.gun.play();
-    } else if (this.player.swordState === Throw.Locked && this.player.fireCountdown <= 0) {
+    }
+  }
+
+  if (game.input.keyboard.isDown(Phaser.Keyboard.X)) {
+    if (this.player.swordState === Throw.Locked && this.player.fireCountdown <= 0) {
       this.player.chain.reelIn()
     }
   }
