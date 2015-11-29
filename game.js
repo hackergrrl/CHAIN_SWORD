@@ -9,6 +9,7 @@ var Throw = {
   Locked: 3,
   PullingSelf: 4,
   PullingSword: 5,
+  Slashing: 6,
 }
 
 function PlayState(game) {
@@ -27,6 +28,7 @@ PlayState.prototype.preload = function() {
 
   game.load.spritesheet('player', 'assets/graphics/_player.png', 10*2, 16*2);
   game.load.spritesheet('player_sword', 'assets/graphics/_sword.png', 17*2, 16*2);
+  game.load.image('player_sword_slash', 'assets/graphics/_sword_slash.png')
   game.load.image('sword', 'assets/graphics/_raw_sword.png');
 
   game.load.image('chain', 'assets/graphics/_chain_segment.png')
@@ -195,6 +197,40 @@ PlayState.prototype.create = function() {
     // return this.body.onFloor() || this.body.touching.down;
   };
 
+  player.slash = function() {
+    var slash = game.add.sprite(this.x + this.scale.x * 8, this.y, 'player_sword_slash');
+    slash.anchor.set(0.5, 0.5);
+    game.physics.p2.enable(slash)
+    // slash.body.setCollisionGroup(this.slashCollisionGroup)
+    slash.body.collides([])
+    slash.body.kinematic = true
+    slash.body.allowGravity = false
+    slash.tint = this.team
+    slash.scale.x = this.scale.x
+    // slash.scale.x *= 2.5
+    // slash.scale.y *= 1.5
+
+    var dirX = this.scale.x
+    var lifetime = 0.06
+
+    this.slashSprite = slash
+    this.swordState = Throw.Slashing
+
+    slash.update = function () {
+      this.body.moveRight(dirX * 512)
+      // this.body.moveDown(dirX * 64)
+      this.scale.x *= 1.1
+      this.scale.y *= 1.01
+      lifetime -= game.time.physicsElapsed
+      if (lifetime <= 0) {
+        player.slashSprite = null
+        player.swordState = Throw.Ready
+        console.log('foo')
+        this.destroy()
+      }
+    }
+  }
+
   player.jump = function() {
     if (this.canJump()) {
       this.body.moveUp(this.jumpForce)
@@ -221,10 +257,10 @@ PlayState.prototype.create = function() {
     if (this.canJump()) {
       player.animations.play('idle');
       player.sword.animations.play('idle');
-    } else if (this.body.velocity.y < -10) {
+    } else if (this.body.velocity.y > 10) {
       player.animations.play('jump_upward');
       player.sword.animations.play('jump_upward');
-    } else if (this.body.velocity.y > 10) {
+    } else if (this.body.velocity.y < -10) {
       player.animations.play('jump_downward');
       player.sword.animations.play('jump_downward');
     }
@@ -236,19 +272,18 @@ PlayState.prototype.create = function() {
     if (this.swordState === Throw.PullingSelf || this.swordState === Throw.PullingSword) {
       var sword = player.chain.sword
       if (player.swordState === Throw.PullingSelf) {
-        player.pullAccum += 10
+        player.pullAccum += 20
         var angle = game.math.angleBetween(this.x, this.y, sword.x, sword.y)
-        var pullForce = Math.min(550, player.pullAccum)
-        if (pullForce < 100) {
+        var pullForce = Math.min(750, player.pullAccum)
+        if (pullForce < 175) {
           pullForce = 0
         }
-        // player.body.force.x += Math.cos(angle) * pullForce
-        // player.body.force.y += Math.sin(angle) * pullForce
         player.body.moveRight(Math.cos(angle) * pullForce)
         player.body.moveDown(Math.sin(angle) * pullForce)
       } else if (player.swordState === Throw.PullingSword) {
         var angle = game.math.angleBetween(sword.x, sword.y, this.x, this.y)
-        var pullForce = 750
+        player.pullAccum += 40
+        var pullForce = Math.min(2000, player.pullAccum)
         sword.body.moveRight(Math.cos(angle) * pullForce)
         sword.body.moveDown(Math.sin(angle) * pullForce)
       }
@@ -361,6 +396,12 @@ PlayState.prototype.update = function() {
   }
 
   this.player.update();
+
+  // Slash
+  // if (game.input.keyboard.justPressed(Phaser.Keyboard.C) && this.player.swordState === Throw.Ready && this.player.fireCountdown <= 0) {
+  //   this.player.slash()
+  //   this.player.fireCountdown = 2
+  // }
 
   // Detach sword from target
   if (game.input.keyboard.justReleased(Phaser.Keyboard.X)) {
