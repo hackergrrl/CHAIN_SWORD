@@ -1,6 +1,14 @@
 // so fight me, pff
 var chains
 
+var Throw = {
+  Ready: 1,
+  Thrown: 2,
+  Locked: 3,
+  PullingSelf: 4,
+  PullingSword: 5,
+}
+
 function PlayState(game) {
 }
 
@@ -15,7 +23,7 @@ PlayState.prototype.preload = function() {
   game.load.tilemap('level1', 'assets/maps/test.json', null, Phaser.Tilemap.TILED_JSON);
   game.load.image('tileset', 'assets/graphics/_tileset.png');
 
-  game.load.spritesheet('player', 'assets/graphics/_player.png', 17*2, 16*2);
+  game.load.spritesheet('player', 'assets/graphics/_player.png', 10*2, 16*2);
   game.load.spritesheet('sword', 'assets/graphics/_sword.png', 17*2, 16*2);
 
   game.load.spritesheet('chain', 'assets/graphics/_chain_segment.png', 5*2, 5*2);
@@ -93,6 +101,7 @@ PlayState.prototype.create = function() {
   player.body.drag.set(2000, 0);
   player.body.maxVelocity.x = 150;
   player.body.setSize(8*2, 12*2, 0*2, 2*2);
+  player.swordState = Throw.Ready
   player.walkForce = 1500;
   player.jumpForce = 460;
   player.fireDelay = 150;
@@ -122,6 +131,18 @@ PlayState.prototype.create = function() {
   };
 
   player.update = function() {
+    player.sword.visible = (this.swordState === Throw.Ready)
+
+    if (player.chain && player.chain.sprite) {
+      var sword = player.chain.sword
+      var angle = game.math.angleBetween(player.x, player.y, sword.x, sword.y)
+      player.chain.sprite.x = player.x
+      player.chain.sprite.y = player.y
+      player.chain.sprite.angle = angle * (180 / Math.PI)
+      var dist = game.math.distance(player.x, player.y, sword.x, sword.y)
+      player.chain.sprite.width = dist
+    }
+
     if (this.canJump()) {
       player.animations.play('idle');
       player.sword.animations.play('idle');
@@ -135,51 +156,94 @@ PlayState.prototype.create = function() {
 
     player.sword.x = player.x - player.anchor.x * player.width + player.body.velocity.x * game.time.physicsElapsed
     player.sword.y = player.y - player.anchor.y * player.height + player.body.velocity.y * game.time.physicsElapsed
+
+    // reel sword back in
+    if (this.swordState === Throw.PullingSelf || this.swordState === Throw.PullingSword) {
+      var sword = player.chain.sword
+      if (player.swordState === Throw.PullingSelf) {
+        player.pullAccum += 1
+        var angle = game.math.angleBetween(this.x, this.y, sword.x, sword.y)
+        var pullForce = Math.min(20, player.pullAccum)
+        player.body.velocity.x += Math.cos(angle) * pullForce
+        player.body.velocity.y += Math.sin(angle) * pullForce
+        // player.body.moveRight(Math.cos(angle) * pullForce)
+        // player.body.moveDown(Math.sin(angle) * pullForce)
+      } else if (player.swordState === Throw.PullingSword) {
+        var angle = game.math.angleBetween(sword.x, sword.y, this.x, this.y)
+        var pullForce = 20
+        sword.body.velocity.x += Math.cos(angle) * pullForce
+        sword.body.velocity.y += Math.sin(angle) * pullForce
+      }
+      if (game.math.distance(this.x, this.y, sword.x, sword.y) < 21) {
+        player.chain.sprite.kill()
+        player.chain = null
+        sword.kill()
+        player.swordState = Throw.Ready
+      }
+    }
   };
 
   player.shootChain = function(dirX, dirY) {
-    var segs = []
-    for (var i=0; i < 10; i++) {
-      var chain = chains.create(player.x + i*10, player.y, 'chain');
-      chain.tint = player.team
-      game.physics.enable(chain);
-      chain.body.allowGravity = true;
-      chain.anchor.set(0.5, 0.5);
+    this.pullAccum = 0
+    var lastSeg;
+    var height = 5
+    var width = 10
+    var maxForce = 2000000
+    var length = 15
+    var state = game.state.getCurrentState()
 
-      chain.links = []
+    this.swordState = Throw.Thrown
 
-      chain.update = function() {
-        for (var j in this.links) {
-          var link = this.links[j]
-          var dx = link.x - this.x
-          var dy = link.y - this.y
-          var dist = Math.sqrt(dx*dx + dy*dy)
-          var ideal_distance = 8
-          var k = 0.5
-          if (dist > ideal_distance) {
-            this.body.velocity.x += dx * k
-            this.body.velocity.y += dy * k
-          }
-          if (dist < ideal_distance) {
-            this.body.velocity.x += -dx * k
-            this.body.velocity.y += -dy * k
-          }
-        }
-        // this.body.velocity.x *= 0.8
-        // this.body.velocity.y *= 0.8
-      };
-
-      segs[i] = chain
-      if (i > 0) {
-        chain.links.push(segs[i-1])
-        segs[i-1].links.push(chain)
+    // sword
+    var sword = game.add.sprite(this.x, this.y, 'sword')
+    game.physics.arcade.enable(sword, false);
+    sword.anchor.set(0.2, 0.5)
+    sword.scale.x = this.scale.x
+    sword.tint = this.team
+    sword.body.allowGravity = false
+    sword.body.fixedRotation = true
+    sword.update = function () {
+      if (!this.hitGround) {
+        // sword.rotation = Math.atan2(this.body.velocity.y, this.body.velocity.x)
+        sword.body.velocity.x = 750 * dirX
+        sword.body.velocity.y = 750 * dirY
       }
     }
-    segs[9].body.velocity.x = dirX * 20;
-    segs[9].body.velocity.y = dirY * 20;
-    player.chain = {
-      segs: segs
+    // sword.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
+    //   if (!this.done && !this.hitGround && shapeB.material.name === 'ground') {
+    //     this.hitGround = true
+    //     game.state.getCurrentState().spawnOmniDust(this.x, this.y)
+    //     var maxForce = 2000000
+    //     this.lock = game.physics.p2.createRevoluteConstraint(this.body, [0, -10], worldBody, [this.x, this.y], maxForce);
+    //     this.body.allowGravity = false
+    //     this.done = true
+    //     player.swordState = Throw.Locked
+    //   }
+    // }, sword)
+
+    var chain = this.game.add.tileSprite(player.x, player.y, 128, 8, 'chain');
+    chain.anchor.set(0, 0.5)
+    chain.tint = player.team
+
+    player.chain = {}
+    player.chain.sprite = chain
+
+    player.chain.sword = sword
+    player.chain.reelIn = function () {
+      player.retractSword = true
+      player.swordState = Throw.PullingSelf
     }
+    player.chain.detach = function () {
+      sword.body.allowGravity = true
+      player.swordState = Throw.PullingSword
+    }
+
+    if (dirY === -1) {
+      sword.angle = -90
+    }
+    // if (dirY === 1) {
+    //   sword.angle = 90
+    // }
   };
 };
 
@@ -195,6 +259,16 @@ PlayState.prototype.update = function() {
       chain.body.velocity.y *= 0.96
     });
 
+  if (this.player.chain) {
+    game.physics.arcade.collide(this.player.chain.sword, this.fg, function(sword, tile) {
+      if (!sword.hitGround) {
+        sword.hitGround = true
+        game.state.getCurrentState().spawnOmniDust(sword.x, sword.y)
+        game.state.getCurrentState().player.swordState = Throw.Locked
+      }
+    })
+  }
+
   this.player.body.acceleration.x = 0;
   if (game.input.keyboard.isDown(Phaser.Keyboard.LEFT)) {
     this.player.body.acceleration.x = -this.player.walkForce;
@@ -209,19 +283,40 @@ PlayState.prototype.update = function() {
 
   this.player.update();
 
-  if (game.input.keyboard.justPressed(Phaser.Keyboard.SPACEBAR)) {
-    if (!this.player.chain) {
-      this.player.shootChain(this.player.scale.x === -1 ?
-          this.player.x - 50 : this.player.x + 35, 0)
+  // Detach sword from target
+  if (game.input.keyboard.justReleased(Phaser.Keyboard.X)) {
+    if (this.player.swordState === Throw.PullingSelf || this.player.swordState === Throw.PullingSword) {
+      this.player.chain.detach()
+    }
+  }
+
+  if (game.input.keyboard.justPressed(Phaser.Keyboard.X)) {
+    // Throw sword
+    if (this.player.swordState === Throw.Ready) {
+      var dirX = this.player.scale.x
+      var dirY = 0
+      if (game.input.keyboard.isDown(Phaser.Keyboard.UP)) {
+        dirY = -1
+        dirX = 0
+      }
+      if (game.input.keyboard.isDown(Phaser.Keyboard.DOWN)) {
+        dirY = 1
+        dirX = 0
+      }
+      this.player.shootChain(dirX, dirY)
       this.player.fireCountdown = this.player.fireDelay;
-      game.gun.play();
+      // game.gun.play();
+    } else if (this.player.swordState === Throw.Locked && this.player.fireCountdown <= 0) {
+      this.player.chain.reelIn()
     }
   }
   this.player.fireCountdown -= game.time.elapsed;
+  this.player.jumpCountdown -= game.time.elapsed;
 
-  if (game.input.keyboard.justPressed(Phaser.Keyboard.UP)) {
+  if (game.input.keyboard.isDown(Phaser.Keyboard.Z)) {
     this.player.jump();
   }
+
 
   this.stars.forEachAlive(function(s) {
     s.x += s.speed;
@@ -274,9 +369,33 @@ PlayState.prototype.spawnLandingDust = function(x, y) {
   }
 }
 
+PlayState.prototype.spawnOmniDust = function(x, y) {
+  for (var i=0; i < 6; i++) {
+    var dust = game.state.getCurrentState().spawnDust(x, y)
+    var ang = Math.random() * Math.PI * 2
+    dust.body.velocity.x = Math.cos(ang) * game.rnd.between(25, 50)
+    dust.body.velocity.y = Math.sin(ang) * game.rnd.between(25, 50)
+  }
+}
 
 var w = 160 * 4;
 var h = 144 * 4;
 var game = new Phaser.Game(w, h, Phaser.AUTO, 'monochain');
 game.state.add('play', PlayState);
 game.state.start('play');
+
+
+
+Phaser.TileSprite.prototype.kill = function() {
+    this.stopScroll();
+    this.alive = false;
+    this.exists = false;
+    this.visible = false;
+
+    if (this.events)
+    {
+        this.events.onKilled.dispatch(this);
+    }
+
+    return this;
+};
