@@ -69,7 +69,7 @@ PlayState.prototype.create = function() {
   this.playerMaterial = game.physics.p2.createMaterial('player');
   var groundPlayerCM = game.physics.p2.createContactMaterial(this.groundMaterial, this.playerMaterial)
   groundPlayerCM.friction = 1.0
-  // groundPlayerCM.stiffness = 1e7
+  groundPlayerCM.stiffness = 1e7
   var groundChainCM = game.physics.p2.createContactMaterial(this.chainMaterial, this.groundMaterial)
   groundChainCM.friction = 0.5
 
@@ -208,6 +208,16 @@ PlayState.prototype.create = function() {
   player.update = function() {
     player.sword.visible = (this.swordState === Throw.Ready)
 
+    if (player.chain && player.chain.sprite) {
+      var sword = player.chain.sword
+      var angle = game.math.angleBetween(player.x, player.y, sword.x, sword.y)
+      player.chain.sprite.x = player.x
+      player.chain.sprite.y = player.y
+      player.chain.sprite.angle = angle * (180 / Math.PI)
+      var dist = game.math.distance(player.x, player.y, sword.x, sword.y)
+      player.chain.sprite.width = dist
+    }
+
     if (this.canJump()) {
       player.animations.play('idle');
       player.sword.animations.play('idle');
@@ -224,37 +234,34 @@ PlayState.prototype.create = function() {
 
     // reel sword back in
     if (this.swordState === Throw.PullingSelf || this.swordState === Throw.PullingSword) {
-      if (this.chain.front < 0) {
-        game.physics.p2.removeConstraint(this.chain.segs[this.chain.segs.length-1].joint)
-        player.chain.sword.kill()
-        player.chain = null
-        this.retractSword = false
-        player.swordState = Throw.Ready
-        return
-      }
-      var front = this.chain.segs[this.chain.front].link
+      var sword = player.chain.sword
       if (player.swordState === Throw.PullingSelf) {
-        var angle = game.math.angleBetween(this.x, this.y, front.x, front.y)
-        var pullForce = 30000
-        player.body.force.x = Math.cos(angle) * pullForce
-        player.body.force.y = Math.sin(angle) * pullForce
+        player.pullAccum += 10
+        var angle = game.math.angleBetween(this.x, this.y, sword.x, sword.y)
+        var pullForce = Math.min(650, player.pullAccum)
+        pullForce = 25000
+        player.body.force.x += Math.cos(angle) * pullForce
+        player.body.force.y += Math.sin(angle) * pullForce
+        // player.body.moveRight(Math.cos(angle) * pullForce)
+        // player.body.moveDown(Math.sin(angle) * pullForce)
       } else if (player.swordState === Throw.PullingSword) {
-        var angle = game.math.angleBetween(front.x, front.y, this.x, this.y)
-        var pullForce = 30000
-        front.body.force.x = Math.cos(angle) * pullForce
-        front.body.force.y = Math.sin(angle) * pullForce
+        var angle = game.math.angleBetween(sword.x, sword.y, this.x, this.y)
+        var pullForce = 650
+        sword.body.moveRight(Math.cos(angle) * pullForce)
+        sword.body.moveDown(Math.sin(angle) * pullForce)
       }
-      var dist = game.math.distance(this.x, this.y, front.x, front.y)
-      // console.log(this.chain.front, dist)
-      if (game.math.distance(this.x, this.y, front.x, front.y) < 21) {
-        game.physics.p2.removeConstraint(front.joint)
-        front.kill()
-        this.chain.front--
+      if (game.math.distance(this.x, this.y, sword.x, sword.y) < 21) {
+        game.physics.p2.removeConstraint(sword.lock)
+        sword.kill()
+        player.chain.sprite.kill()
+        player.chain = null
+        player.swordState = Throw.Ready
       }
     }
   };
 
   player.shootChain = function(dirX, dirY) {
+    this.pullAccum = 0
     var lastSeg;
     var height = 5
     var width = 10
@@ -270,83 +277,47 @@ PlayState.prototype.create = function() {
     sword.body.mass = 200
     sword.body.setCollisionGroup(state.chainCollisionGroup)
     sword.body.collides([state.groundCollisionGroup])
-    sword.anchor.set(0.5, 0.5)
+    sword.anchor.set(0.2, 0.5)
     sword.scale.x = this.scale.x
     sword.tint = this.team
     sword.body.allowGravity = false
     sword.body.fixedRotation = true
     sword.done = false
+    // sword.body.velocity.x = 750 * dirX
+    // sword.body.velocity.y = 750 * dirY
     sword.update = function () {
       if (!this.hitGround) {
+        sword.rotation = Math.atan2(this.body.velocity.y, this.body.velocity.x)
+      // var angle = game.math.angleBetween(sword.x, sword.y, player.x, player.y)
         // sword.body.velocity.x = 450 * dirX
         // sword.body.velocity.y = 450 * dirY
         // sword.body.moveUp(30)
-        sword.body.moveRight(450 * dirX)
-        sword.body.moveDown(450 * dirY)
+        sword.body.moveRight(750 * dirX)
+        sword.body.moveDown(750 * dirY)
       }
     }
     sword.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
-      if (!this.done && !this.hitGround && shapeB.material.name == 'ground') {
+      if (!this.done && !this.hitGround && shapeB.material.name === 'ground') {
         this.hitGround = true
         game.state.getCurrentState().spawnOmniDust(this.x, this.y)
         var maxForce = 2000000
-        this.lock = game.physics.p2.createRevoluteConstraint(this.body, [0, 0], worldBody, [this.x, this.y], maxForce);
-        this.body.allowGravity = true
+        this.lock = game.physics.p2.createRevoluteConstraint(this.body, [0, -10], worldBody, [this.x, this.y], maxForce);
+        this.body.allowGravity = false
         this.done = true
         player.swordState = Throw.Locked
       }
     }, sword)
 
-    var segs = []
-    var plrJoint
-
-    for (var i = 0; i <= length; i++)
-    {
-      var x = this.x + this.width * 0.5 + i
-      var y = this.y
-
-      newSeg = game.add.sprite(x, y, 'chain')
-      game.physics.p2.enable(newSeg, false);
-      // newSeg.body.setCircle(5)
-      newSeg.body.setMaterial(state.chainMaterial)
-      newSeg.body.setCollisionGroup(state.chainCollisionGroup)
-      newSeg.body.collides([state.groundCollisionGroup])
-      newSeg.tint = this.team
-      // newSeg.body.debug = true
-
-      if (i === 0) {
-        joint = game.physics.p2.createRevoluteConstraint(newSeg, [0, -width], sword, [-8, 0], maxForce);
-        newSeg.body.mass = 1
-      }
-      else {  
-        newSeg.body.mass = 1 / i
-      }
-      newSeg.body.mass = 1
-
-      var joint = null
-
-      if (lastSeg) {
-        joint = game.physics.p2.createRevoluteConstraint(newSeg, [0, -width], lastSeg, [0, width], maxForce);
-      }
-
-      if (i == length) {
-        segs[length+1] = {
-          link: null,
-          joint: game.physics.p2.createRevoluteConstraint(newSeg, [0, width], player, [-width, 0], maxForce)
-        }
-      }
-
-      segs[i] = {
-        link: newSeg,
-        joint: joint
-      }
-
-      lastSeg = newSeg;
-    }
+    // var pt1 = new Phaser.Point(player.x, player.y)
+    // var pt2 = new Phaser.Point(player.x, player.y)
+    // var chain = game.add.rope(player.x, player.y, 'chain', null, [pt1, pt2])
+    var chain = this.game.add.tileSprite(player.x, player.y, 128, 8, 'chain');
+    chain.anchor.set(0, 0.5)
+    chain.tint = player.team
 
     player.chain = {}
-    player.chain.segs = segs
-    player.chain.front = length
+    player.chain.sprite = chain
+
     player.chain.sword = sword
     player.chain.reelIn = function () {
       player.retractSword = true
@@ -358,12 +329,22 @@ PlayState.prototype.create = function() {
       sword.body.mass = 5
       sword.body.fixedRotation = false
       sword.body.allowGravity = true
+      // sword.body.angularVelocity = 10
       player.swordState = Throw.PullingSword
+
+      sword.body.collides([])
+      // var angle = game.math.angleBetween(sword.x, sword.y, player.x, player.y)
+      // var pullForce = 100
+      // sword.x += Math.cos(angle) * pullForce
+      // sword.y += Math.sin(angle) * pullForce
     }
 
     if (dirY === -1) {
       sword.angle = -90
     }
+    // if (dirY === 1) {
+    //   sword.angle = 90
+    // }
   };
 };
 
@@ -392,7 +373,7 @@ PlayState.prototype.update = function() {
     }
   }
 
-  if (game.input.keyboard.justPressed(Phaser.Keyboard.X)) {
+  if (game.input.keyboard.isDown(Phaser.Keyboard.X)) {
     // Throw sword
     if (this.player.swordState === Throw.Ready) {
       var dirX = this.player.scale.x
@@ -485,3 +466,18 @@ game.state.start('play');
 
 // samurai gunn: 22x16
 
+Phaser.TileSprite.prototype.kill = function() {
+
+    this.stopScroll();
+    this.alive = false;
+    this.exists = false;
+    this.visible = false;
+
+    if (this.events)
+    {
+        this.events.onKilled.dispatch(this);
+    }
+
+    return this;
+
+};
