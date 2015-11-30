@@ -179,6 +179,8 @@ PlayState.prototype.create = function() {
 
 PlayState.prototype.createPlayer = function(x, y, team) {
   var player = game.add.sprite(x, y, 'player');
+  player.respawnX = x
+  player.respawnY = y
   player.swordState = Throw.Ready
   player.animations.add('idle', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 10, true);
   player.animations.add('jump_upward', [2], 10, false);
@@ -293,7 +295,32 @@ PlayState.prototype.createPlayer = function(x, y, team) {
   };
 
   player.update = function() {
-    this.sword.visible = (this.swordState === Throw.Ready)
+    this.sword.visible = (this.swordState === Throw.Ready && this.visible)
+
+    // check for collisions with other swords
+    for (var i=0; i < players.length; i++) {
+      if (players[i] !== this) {
+        var player = players[i]
+        if (player.chain) {
+          var dist = game.math.distance(this.x, this.y, player.chain.sword.x, player.chain.sword.y)
+          if (dist <= 16) {
+            player.chain.reelIn()
+            player.chain.detach()
+            game.state.getCurrentState().spawnDeathDust(this)
+            this.visible = false
+            this.body.moveLeft(10000)
+            this.body.moveDown(10000)
+            game.time.events.add(5000, function() {
+              this.body.x = this.respawnX
+              this.body.y = this.respawnY
+              this.body.velocity.x = 0
+              this.body.velocity.y = 0
+              this.visible = true
+            }, this);
+          }
+        }
+      }
+    }
 
     if (this.chain && this.chain.sprite) {
       var sword = this.chain.sword
@@ -552,6 +579,16 @@ PlayState.prototype.spawnOmniDust = function(x, y) {
     var ang = Math.random() * Math.PI * 2
     dust.body.velocity.x = Math.cos(ang) * game.rnd.between(25, 50)
     dust.body.velocity.y = Math.sin(ang) * game.rnd.between(25, 50)
+  }
+}
+
+PlayState.prototype.spawnDeathDust = function(player) {
+  for (var i=0; i < 10; i++) {
+    var dust = game.state.getCurrentState().spawnDust(player.x, player.y)
+    var ang = Math.random() * Math.PI * 2
+    dust.body.velocity.x = Math.cos(ang) * game.rnd.between(25, 75)
+    dust.body.velocity.y = Math.sin(ang) * game.rnd.between(25, 75)
+    dust.tint = player.team
   }
 }
 
