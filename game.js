@@ -23,7 +23,7 @@ PlayState.prototype.preload = function() {
 
   game.load.spritesheet('dust', 'assets/graphics/_dust.png', 8, 8);
 
-  game.load.tilemap('level1', 'assets/maps/sgunn.json', null, Phaser.Tilemap.TILED_JSON);
+  game.load.tilemap('level1', 'assets/maps/test.json', null, Phaser.Tilemap.TILED_JSON);
   game.load.image('tileset', 'assets/graphics/_tileset.png');
 
   game.load.spritesheet('player', 'assets/graphics/_player.png', 10*2, 16*2);
@@ -126,7 +126,14 @@ PlayState.prototype.create = function() {
   worldBody.body.static = true
   worldBody.body.debug = true
 
-  var player = game.add.sprite(16*3, 136*2, 'player');
+  this.createPlayer(20*4, 136*2, 0xFF0000)
+  this.createPlayer(45*4, 86*2, 0x00FF00)
+  this.createPlayer(110*4, 136*2, 0xFF00FF)
+  this.createPlayer(130*4, 86*2, 0xFFFF00)
+}
+
+PlayState.prototype.createPlayer = function(x, y, team) {
+  var player = game.add.sprite(x, y, 'player');
   player.swordState = Throw.Ready
   player.animations.add('idle', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 10, true);
   player.animations.add('jump_upward', [2], 10, false);
@@ -145,7 +152,7 @@ PlayState.prototype.create = function() {
   player.jumpForce = 460;
   player.fireDelay = 150;
   player.fireCountdown = 0;
-  player.team = 0xFF0000;
+  player.team = team
   player.jumpCountdown = 0
   this.player = player;
 
