@@ -314,10 +314,31 @@ PlayState.prototype.createPlayer = function(x, y, team) {
             game.time.events.add(5000, function() {
               this.body.x = this.respawnX
               this.body.y = this.respawnY
+              this.swordState = Throw.Ready
               this.body.velocity.x = 0
               this.body.velocity.y = 0
               this.visible = true
             }, this);
+          }
+        }
+      }
+    }
+
+    // check for sword vs sword collisions
+    if (this.chain) {
+      for (var i=0; i < players.length; i++) {
+        if (players[i] !== this && players[i].chain && players[i].chain.sword) {
+          var player = players[i]
+          var dist = game.math.distance(player.chain.sword.x, player.chain.sword.y, this.chain.sword.x, this.chain.sword.y)
+          if (dist <= 17) {
+            player.chain.reelIn() 
+            player.chain.detach() 
+            player.chain.hit = true
+            this.chain.reelIn() 
+            this.chain.detach() 
+            this.chain.hit = true
+            game.state.getCurrentState().spawnOmniDust(this.chain.sword.x, this.chain.sword.y)
+            break
           }
         }
       }
@@ -351,7 +372,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
                   var that = this
                   game.time.events.add(350, function() {
                     if (that.chain) {
-                      // TODO: create new 'sword pickup' object at old sword's coords
+                      // create new 'sword pickup' object at old sword's coords
                       var sword = game.add.sprite(that.chain.sword.x, that.chain.sword.y, 'sword')
                       game.physics.p2.enable(sword, false);
                       sword.body.mass = 10
@@ -367,6 +388,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
                             if (dist <= 16) {
                               players[i].swordState = Throw.Ready
                               this.kill()
+                              this.destroy()
                               return
                             }
                           }
@@ -430,11 +452,11 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       if (this.swordState === Throw.Ready) {
         var dirX = this.scale.x
         var dirY = 0
-        if (game.input.keyboard.isDown(Phaser.Keyboard.UP)) {
+        if (game.input.keyboard.isDown(this.input.up)) {
           dirY = -1
           dirX = 0
         }
-        if (game.input.keyboard.isDown(Phaser.Keyboard.DOWN)) {
+        if (game.input.keyboard.isDown(this.input.down)) {
           dirY = 1
           dirX = 0
         }
@@ -452,7 +474,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     }
 
     if (game.input.keyboard.isDown(this.input.shoot)) {
-      if (this.swordState === Throw.Locked && this.fireCountdown <= 0) {
+      if (this.chain && this.swordState === Throw.Locked && this.fireCountdown <= 0) {
         this.chain.reelIn()
       }
     }
@@ -629,11 +651,12 @@ PlayState.prototype.spawnJumpDust = function(x, y) {
   }
 }
 
-PlayState.prototype.spawnLandingDust = function(x, y) {
+PlayState.prototype.spawnLandingDust = function(x, y, rot) {
+  rot = rot || 0
   for (var i=0; i < 6; i++) {
     var dust = game.state.getCurrentState().spawnDust(x, y)
-    dust.body.velocity.x = (i < 3 ? -1 : 1) * game.rnd.between(30, 40)
-    dust.body.velocity.y = 20
+    dust.body.velocity.x = Math.cos(rot) * (i < 3 ? -1 : 1) * game.rnd.between(30, 40) + Math.cos(rot-Math.PI/2) * 20
+    dust.body.velocity.y = Math.sin(rot) * (i < 3 ? -1 : 1) * game.rnd.between(30, 40) + Math.sin(rot-Math.PI/2) * 20
     dust.update = function() {
       this.body.velocity.y -= 20
       // this.body.velocity.x *= 0.99999
