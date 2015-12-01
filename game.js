@@ -49,6 +49,8 @@ PlayState.prototype.preload = function() {
 PlayState.prototype.create = function() {
   console.log('create');
 
+  game.input.gamepad.start();
+
   game.physics.startSystem(Phaser.Physics.P2JS);
   game.physics.p2.gravity.y = 1350;
   game.physics.p2.restitution = 0.1
@@ -433,12 +435,12 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       this.sword.animations.play('jump_downward');
     }
 
-    if (game.input.keyboard.isDown(this.input.left) && this.body.velocity.x < 6) {
+    if (this.input.isLeft() && this.body.velocity.x < 6) {
       this.body.force.x = -this.walkForce;
       this.scale.x = -1;
       this.sword.scale.x = -1;
     }
-    else if (game.input.keyboard.isDown(this.input.right) && this.body.velocity.x > -6) {
+    else if (this.input.isRight() && this.body.velocity.x > -6) {
       this.body.force.x = this.walkForce;
       this.scale.x = 1;
       this.sword.scale.x = 1;
@@ -447,16 +449,19 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     }
 
     // Shoot
-    if (game.input.keyboard.justPressed(this.input.shoot)) {
+    // if (game.input.keyboard.justPressed(this.input.shoot)) {
+    if (this.input.isShooting()) {
       // Throw sword
       if (this.swordState === Throw.Ready) {
         var dirX = this.scale.x
         var dirY = 0
-        if (game.input.keyboard.isDown(this.input.up)) {
+        // if (game.input.keyboard.isDown(this.input.up)) {
+        if (this.input.isUp()) {
           dirY = -1
           dirX = 0
         }
-        if (game.input.keyboard.isDown(this.input.down)) {
+        // if (game.input.keyboard.isDown(this.input.down)) {
+        if (this.input.isDown()) {
           dirY = 1
           dirX = 0
         }
@@ -467,13 +472,15 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     }
 
     // Detach sword from target
-    if (game.input.keyboard.justReleased(this.input.shoot)) {
+    // if (game.input.keyboard.justReleased(this.input.shoot)) {
+    if (!this.input.isShooting()) {
       if (this.swordState === Throw.PullingSelf || this.swordState === Throw.PullingSword) {
         this.chain.detach()
       }
     }
 
-    if (game.input.keyboard.isDown(this.input.shoot)) {
+    // if (game.input.keyboard.isDown(this.input.shoot)) {
+    if (this.input.isShooting()) {
       if (this.chain && this.swordState === Throw.Locked && this.fireCountdown <= 0) {
         this.chain.reelIn()
       }
@@ -481,7 +488,8 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     this.fireCountdown -= game.time.elapsed;
     this.jumpCountdown -= game.time.elapsed;
 
-    if (game.input.keyboard.isDown(this.input.jump)) {
+    // if (game.input.keyboard.isDown(this.input.jump)) {
+    if (this.input.isJumping()) {
       this.jump();
     }
 
@@ -717,4 +725,16 @@ function injectInput(input) {
         || (this.gamepad && this.gamepad.connected
         && this.gamepad._buttons[1].isDown);
   };
+  input.isLeft = function() {
+    return game.input.keyboard.isDown(this.left) || (this.gamepad && this.gamepad.connected && this.gamepad._axes[0] < 0)
+  }
+  input.isRight = function() {
+    return game.input.keyboard.isDown(this.right) || (this.gamepad && this.gamepad.connected && this.gamepad._axes[0] > 0)
+  }
+  input.isUp = function() {
+    return game.input.keyboard.isDown(this.up) || (this.gamepad && this.gamepad.connected && this.gamepad._axes[1] < 0)
+  }
+  input.isDown = function() {
+    return game.input.keyboard.isDown(this.down) || (this.gamepad && this.gamepad.connected && this.gamepad._axes[1] > 0)
+  }
 }
