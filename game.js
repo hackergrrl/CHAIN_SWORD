@@ -52,7 +52,7 @@ PlayState.prototype.create = function() {
   game.input.gamepad.start();
 
   game.physics.startSystem(Phaser.Physics.P2JS);
-  game.physics.p2.gravity.y = 1350;
+  game.physics.p2.gravity.y = 900;
   game.physics.p2.restitution = 0.1
   game.physics.p2.world.defaultContactMaterial.friction = 0.5
   game.physics.p2.world.setGlobalStiffness(1e5);
@@ -508,7 +508,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       if (this.swordState === Throw.PullingSelf) {
         this.pullAccum += 20
         var angle = game.math.angleBetween(this.x, this.y, sword.x, sword.y)
-        var pullForce = Math.min(750, this.pullAccum)
+        var pullForce = Math.min(400, this.pullAccum)
         if (pullForce < 175) {
           pullForce = 0
         }
@@ -517,7 +517,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       } else if (this.swordState === Throw.PullingSword) {
         var angle = game.math.angleBetween(sword.x, sword.y, this.x, this.y)
         this.pullAccum += 40
-        var pullForce = Math.min(2000, this.pullAccum)
+        var pullForce = Math.min(400, this.pullAccum)
         sword.body.moveRight(Math.cos(angle) * pullForce)
         sword.body.moveDown(Math.sin(angle) * pullForce)
       }
@@ -554,16 +554,11 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     sword.body.allowGravity = false
     sword.body.fixedRotation = true
     sword.done = false
-    // sword.body.velocity.x = 750 * dirX
-    // sword.body.velocity.y = 750 * dirY
+    var SWORD_SPEED = 600
     sword.update = function () {
       if (!this.hitGround) {
-        // sword.rotation = Math.atan2(this.body.velocity.y, this.body.velocity.x)
-      // var angle = game.math.angleBetween(sword.x, sword.y, player.x, player.y)
-        // sword.body.velocity.x = 450 * dirX
-        // sword.body.velocity.y = 450 * dirY
-        sword.body.moveRight(950 * dirX)
-        sword.body.moveDown(950 * dirY - 30)
+        sword.body.moveRight(SWORD_SPEED * dirX)
+        sword.body.moveDown(SWORD_SPEED * dirY - 30)
       }
     }
     sword.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
@@ -590,7 +585,6 @@ PlayState.prototype.createPlayer = function(x, y, team) {
 
     player.chain.sword = sword
     player.chain.reelIn = function () {
-      player.retractSword = true
       player.swordState = Throw.PullingSelf
     }
     player.chain.detach = function () {
