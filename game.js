@@ -12,6 +12,7 @@ var Throw = {
   PullingSelf: 4,
   PullingSword: 5,
   Slashing: 6,
+  NoSword: 7
 }
 
 function PlayState(game) {
@@ -143,12 +144,12 @@ PlayState.prototype.create = function() {
   players[1] = this.createPlayer(45*4, 86*2, 0x00FF00)
   players[1].input = {
     gamepad: game.input.gamepad.pad2,
-    // up: Phaser.Keyboard.UP,
-    // down: Phaser.Keyboard.DOWN,
-    // left: Phaser.Keyboard.LEFT,
-    // right: Phaser.Keyboard.RIGHT,
-    // jump: Phaser.Keyboard.Z,
-    // shoot: Phaser.Keyboard.X
+    up: Phaser.Keyboard.W,
+    down: Phaser.Keyboard.S,
+    left: Phaser.Keyboard.A,
+    right: Phaser.Keyboard.D,
+    jump: Phaser.Keyboard.O,
+    shoot: Phaser.Keyboard.P
   };
   injectInput(players[1].input)
 
@@ -317,6 +318,73 @@ PlayState.prototype.createPlayer = function(x, y, team) {
               this.body.velocity.y = 0
               this.visible = true
             }, this);
+          }
+        }
+      }
+    }
+
+    // check for other swords colliding with my chain
+    if (this.chain) {
+      // step along player->sword line, checking distance along the way to each sword
+      var start = [this.x, this.y]
+      var end = [this.chain.sword.x, this.chain.sword.y]
+      var step = [end[0] - start[0], end[1] - start[1]]
+      var len = Math.sqrt(step[0]*step[0] + step[1]*step[1])
+      if (len > 0) {
+        var STEP_SIZE = 16
+        step[0] = (step[0] / len) * STEP_SIZE
+        step[1] = (step[1] / len) * STEP_SIZE
+        var steps = len / STEP_SIZE
+        for (var i=0; i < players.length; i++) {
+          if (players[i] !== this && players[i].chain && !this.chain.hit) {
+            var player = players[i]
+            if (player.chain) {
+              var pos = [start[0], start[1]]
+              for (var i=0; i < steps; i++) {
+                var dist = game.math.distance(pos[0], pos[1], player.chain.sword.x, player.chain.sword.y)
+                if (dist <= 10) {
+                  this.chain.hit = true
+                  this.chain.sprite.tint = 0xFFFFFF
+                  this.chain.sword.tint = 0xFFFFFF
+                  player.chain.reelIn()
+                  player.chain.detach()
+                  var that = this
+                  game.time.events.add(350, function() {
+                    if (that.chain) {
+                      // TODO: create new 'sword pickup' object at old sword's coords
+                      var sword = game.add.sprite(that.chain.sword.x, that.chain.sword.y, 'sword')
+                      game.physics.p2.enable(sword, false);
+                      sword.body.mass = 10
+                      sword.body.setCollisionGroup(game.state.getCurrentState().chainCollisionGroup)
+                      sword.body.collides([game.state.getCurrentState().groundCollisionGroup])
+                      sword.anchor.set(0, 0.5)
+                      sword.body.allowGravity = true
+                      sword.update = function () {
+                        for (var i=0; i < players.length; i++) {
+                          if (players[i].swordState === Throw.NoSword) {
+                            var dist = game.math.distance(players[i].x, players[i].y, this.x, this.y)
+                            // console.log(dist)
+                            if (dist <= 16) {
+                              players[i].swordState = Throw.Ready
+                              this.kill()
+                              return
+                            }
+                          }
+                        }
+                      }
+                      game.physics.p2.removeConstraint(that.chain.sword.lock)
+                      that.chain.sprite.kill()
+                      that.chain.sword.kill()
+                      that.chain = null
+                      that.swordState = Throw.Ready
+                    }
+                    that.swordState = Throw.NoSword
+                  })
+                }
+                pos[0] += step[0]
+                pos[1] += step[1]
+              }
+            }
           }
         }
       }
