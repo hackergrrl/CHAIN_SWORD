@@ -300,19 +300,24 @@ PlayState.prototype.createPlayer = function(x, y, team) {
   player.update = function() {
     this.sword.visible = (this.swordState === Throw.Ready && this.visible)
 
-    // check for collisions with other swords
+    // check for other swords hitting us
     for (var i=0; i < players.length; i++) {
       if (players[i] !== this) {
         var player = players[i]
         if (player.chain) {
           var dist = game.math.distance(this.x, this.y, player.chain.sword.x, player.chain.sword.y)
-          if (dist <= 16) {
-            player.chain.reelIn()
-            player.chain.detach()
-            game.state.getCurrentState().spawnDeathDust(this)
-            this.visible = false
-            this.body.moveLeft(10000)
-            this.body.moveDown(10000)
+          if (dist <= 16 && this.visible) {
+            game.paused = true
+            var that = this
+            setTimeout(function() {
+              game.paused = false
+              player.chain.reelIn()
+              player.chain.detach()
+              game.state.getCurrentState().spawnDeathDust(that)
+              that.visible = false
+              that.body.moveLeft(10000)
+              that.body.moveDown(10000)
+            }, 150)
             game.time.events.add(5000, function() {
               this.body.x = this.respawnX
               this.body.y = this.respawnY
@@ -321,6 +326,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
               this.body.velocity.y = 0
               this.visible = true
             }, this);
+            break
           }
         }
       }
