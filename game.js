@@ -155,29 +155,29 @@ PlayState.prototype.create = function() {
   };
   injectInput(players[1].input)
 
-  players[2] = this.createPlayer(110*4, 136*2, 0xFF00FF)
-  players[2].input = {
-    gamepad: game.input.gamepad.pad3,
-    // up: Phaser.Keyboard.UP,
-    // down: Phaser.Keyboard.DOWN,
-    // left: Phaser.Keyboard.LEFT,
-    // right: Phaser.Keyboard.RIGHT,
-    // jump: Phaser.Keyboard.Z,
-    // shoot: Phaser.Keyboard.X
-  };
-  injectInput(players[2].input)
+  // players[2] = this.createPlayer(110*4, 136*2, 0xFF00FF)
+  // players[2].input = {
+  //   gamepad: game.input.gamepad.pad3,
+  //   // up: Phaser.Keyboard.UP,
+  //   // down: Phaser.Keyboard.DOWN,
+  //   // left: Phaser.Keyboard.LEFT,
+  //   // right: Phaser.Keyboard.RIGHT,
+  //   // jump: Phaser.Keyboard.Z,
+  //   // shoot: Phaser.Keyboard.X
+  // };
+  // injectInput(players[2].input)
 
-  players[3] = this.createPlayer(130*4, 86*2, 0xFFFF00)
-  players[3].input = {
-    gamepad: game.input.gamepad.pad4,
-    // up: Phaser.Keyboard.UP,
-    // down: Phaser.Keyboard.DOWN,
-    // left: Phaser.Keyboard.LEFT,
-    // right: Phaser.Keyboard.RIGHT,
-    // jump: Phaser.Keyboard.Z,
-    // shoot: Phaser.Keyboard.X
-  };
-  injectInput(players[3].input)
+  // players[3] = this.createPlayer(130*4, 86*2, 0xFFFF00)
+  // players[3].input = {
+  //   gamepad: game.input.gamepad.pad4,
+  //   // up: Phaser.Keyboard.UP,
+  //   // down: Phaser.Keyboard.DOWN,
+  //   // left: Phaser.Keyboard.LEFT,
+  //   // right: Phaser.Keyboard.RIGHT,
+  //   // jump: Phaser.Keyboard.Z,
+  //   // shoot: Phaser.Keyboard.X
+  // };
+  // injectInput(players[3].input)
 }
 
 PlayState.prototype.createPlayer = function(x, y, team) {
@@ -313,6 +313,14 @@ PlayState.prototype.createPlayer = function(x, y, team) {
               game.paused = false
               player.chain.reelIn()
               player.chain.detach()
+              if (that.chain) {
+                if (that.chain.sword.lock) {
+                  game.physics.p2.removeConstraint(that.chain.sword.lock)
+                }
+                that.chain.sprite.kill()
+                that.chain.sword.kill()
+                that.chain = null
+              }
               game.state.getCurrentState().spawnDeathDust(that)
               that.visible = false
               that.body.moveLeft(10000)
