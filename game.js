@@ -75,12 +75,14 @@ PlayState.prototype.create = function() {
 
   this.groundMaterial = game.physics.p2.createMaterial('ground');
   this.playerMaterial = game.physics.p2.createMaterial('player');
+  this.chainMaterial = game.physics.p2.createMaterial('chain');
   var groundPlayerCM = game.physics.p2.createContactMaterial(this.groundMaterial, this.playerMaterial)
   groundPlayerCM.friction = 1.0
+  groundPlayerCM.restitution = 0.15
   groundPlayerCM.stiffness = 1e7
-  var groundChainCM = game.physics.p2.createContactMaterial(this.chainMaterial, this.groundMaterial)
-  groundChainCM.friction = 0.3
-  groundChainCM.restitution = 0.3
+  var groundChainCM = game.physics.p2.createContactMaterial(this.groundMaterial, this.chainMaterial)
+  groundChainCM.friction = 0.5
+  groundChainCM.restitution = 0.5
 
   // sword group
   this.swords = game.add.group()
@@ -198,9 +200,10 @@ PlayState.prototype.createPlayer = function(x, y, team) {
   game.physics.p2.enable(player);
   player.body.setMaterial(this.playerMaterial)
   player.body.fixedRotation = true
+  // player.body.setCircle(15, 5, 0)
   player.body.setCollisionGroup(this.playerCollisionGroup)
   player.body.collides([this.groundCollisionGroup])
-  // player.body.debug = true
+  player.body.debug = true
   player.body.mass = 10
   player.body.collideWorldBounds = true;
   player.walkForce = 60000;
@@ -211,7 +214,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
   player.jumpCountdown = 0
 
   player.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
-      if (shapeB.material.name == 'ground') {
+    if (shapeB.material.name == 'ground') {
       if (this.body.velocity.y < -10 && this.body.velocity.y > -40) {
         game.state.getCurrentState().spawnLandingDust(this.x, this.y + this.height * 0.5 - 4)
       }
@@ -353,10 +356,8 @@ PlayState.prototype.createPlayer = function(x, y, team) {
           var player = players[i]
           var dist = game.math.distance(player.chain.sword.x, player.chain.sword.y, this.chain.sword.x, this.chain.sword.y)
           if (dist <= 17) {
-            player.chain.reelIn() 
             player.chain.detach() 
             player.chain.hit = true
-            this.chain.reelIn() 
             this.chain.detach() 
             this.chain.hit = true
             game.state.getCurrentState().spawnOmniDust(this.chain.sword.x, this.chain.sword.y)
@@ -399,10 +400,11 @@ PlayState.prototype.createPlayer = function(x, y, team) {
                       var sword = game.add.sprite(that.chain.sword.x, that.chain.sword.y, 'sword')
                       game.physics.p2.enable(sword, false);
                       sword.body.mass = 10
-                      sword.body.angularVelocity = game.rnd.between(-30, 30)
+                      sword.body.angularVelocity = game.rnd.between(-10, 10)
                       // sword.body.debug = true
+                      sword.body.setMaterial(game.state.getCurrentState().chainMaterial)
                       sword.body.setCollisionGroup(game.state.getCurrentState().chainCollisionGroup)
-                      sword.body.collides([game.state.getCurrentState().groundCollisionGroup])
+                      sword.body.collides([game.state.getCurrentState().groundCollisionGroup, game.state.getCurrentState().chainCollisionGroup])
                       sword.anchor.set(0.5, 0.5)
                       sword.body.allowGravity = true
                       sword.update = function () {
@@ -420,8 +422,13 @@ PlayState.prototype.createPlayer = function(x, y, team) {
                         }
                       }
                       sword.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
-                        if (shapeB.material.name == 'ground') {
-                          game.state.getCurrentState().spawnLandingDust(this.x, this.y + this.height * 0.5 - 4)
+                        if (shapeB.material && shapeB.material.name == 'ground') {
+                          if (Math.abs(this.body.velocity.y) > 10) {
+                            game.state.getCurrentState().spawnLandingDust(this.x, this.y)
+                          }
+                        } else {
+                          this.body.angularVelocity += 50
+                          this.body.velocity.y += -100
                         }
                       }, sword)
                       game.physics.p2.removeConstraint(that.chain.sword.lock)
@@ -463,16 +470,18 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     }
 
     if (this.input.isLeft() && this.body.velocity.x < 6) {
-      this.body.force.x = -this.walkForce;
+      this.body.force.x += -this.walkForce;
+      // this.body.moveLeft(100)
       this.scale.x = -1;
       this.sword.scale.x = -1;
     }
     else if (this.input.isRight() && this.body.velocity.x > -6) {
-      this.body.force.x = this.walkForce;
+      this.body.force.x += this.walkForce;
+      // this.body.moveRight(100)
       this.scale.x = 1;
       this.sword.scale.x = 1;
     } else {
-      this.body.force.x = 0
+      // this.body.force.x = 0
     }
 
     // Shoot
@@ -572,20 +581,20 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     var sword = game.state.getCurrentState().swords.create(this.x, this.y, 'sword')
     game.physics.p2.enable(sword, false);
     sword.body.mass = 200
-    sword.body.setRectangle(16, 16, 0, 0)
+    sword.body.setRectangle(16, 24, 0, 0)
     sword.body.setCollisionGroup(state.chainCollisionGroup)
-    sword.body.collides([state.groundCollisionGroup])
+    sword.body.collides([state.groundCollisionGroup, state.chainCollisionGroup])
     sword.anchor.set(0, 0.5)
     sword.tint = this.team
     sword.body.allowGravity = false
     sword.body.fixedRotation = true
     sword.done = false
-    // sword.body.debug = true
+    sword.body.debug = true
     var SWORD_SPEED = 600
     sword.update = function () {
       if (!this.hitGround) {
         sword.body.moveRight(SWORD_SPEED * dirX)
-        sword.body.moveDown(SWORD_SPEED * dirY - 30)
+        sword.body.moveDown(SWORD_SPEED * dirY - 20)
 
         var angle = game.math.angleBetween(this.x, this.y, player.x, player.y)
         sword.body.rotation = angle - Math.PI
@@ -629,7 +638,10 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       player.swordState = Throw.PullingSelf
     }
     player.chain.detach = function () {
-      game.physics.p2.removeConstraint(sword.lock)
+      if (sword.lock) {
+        game.physics.p2.removeConstraint(sword.lock)
+      }
+      sword.hitGround = true
       sword.lock = null
       sword.body.mass = 5
       sword.body.fixedRotation = true
