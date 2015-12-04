@@ -141,7 +141,7 @@ PlayState.prototype.create = function() {
 
     players[0] = this.createPlayer(20*4, 136*2, 0xFF0000)
     players[0].input = {
-gamepad: game.input.gamepad.pad1,
+         gamepad: game.input.gamepad.pad1,
          up: Phaser.Keyboard.UP,
          down: Phaser.Keyboard.DOWN,
          left: Phaser.Keyboard.LEFT,
@@ -149,11 +149,11 @@ gamepad: game.input.gamepad.pad1,
          jump: Phaser.Keyboard.Z,
          shoot: Phaser.Keyboard.X
     };
-  injectInput(players[0].input)
+    injectInput(players[0].input)
 
     players[1] = this.createPlayer(45*4, 86*2, 0x00FF00)
     players[1].input = {
-gamepad: game.input.gamepad.pad2,
+         gamepad: game.input.gamepad.pad2,
          up: Phaser.Keyboard.W,
          down: Phaser.Keyboard.S,
          left: Phaser.Keyboard.A,
@@ -161,31 +161,35 @@ gamepad: game.input.gamepad.pad2,
          jump: Phaser.Keyboard.O,
          shoot: Phaser.Keyboard.P
     };
-  injectInput(players[1].input)
+    injectInput(players[1].input)
 
-    // players[2] = this.createPlayer(110*4, 136*2, 0xFF00FF)
-    // players[2].input = {
-    //   gamepad: game.input.gamepad.pad3,
-    //   // up: Phaser.Keyboard.UP,
-    //   // down: Phaser.Keyboard.DOWN,
-    //   // left: Phaser.Keyboard.LEFT,
-    //   // right: Phaser.Keyboard.RIGHT,
-    //   // jump: Phaser.Keyboard.Z,
-    //   // shoot: Phaser.Keyboard.X
-    // };
-    // injectInput(players[2].input)
+    if (game.input.gamepad.pad3.connected) {
+      players[2] = this.createPlayer(110*4, 136*2, 0xFF00FF)
+      players[2].input = {
+        gamepad: game.input.gamepad.pad3,
+        // up: Phaser.Keyboard.UP,
+        // down: Phaser.Keyboard.DOWN,
+        // left: Phaser.Keyboard.LEFT,
+        // right: Phaser.Keyboard.RIGHT,
+        // jump: Phaser.Keyboard.Z,
+        // shoot: Phaser.Keyboard.X
+      };
+      injectInput(players[2].input)
+    }
 
-    // players[3] = this.createPlayer(130*4, 86*2, 0xFFFF00)
-    // players[3].input = {
-    //   gamepad: game.input.gamepad.pad4,
-    //   // up: Phaser.Keyboard.UP,
-    //   // down: Phaser.Keyboard.DOWN,
-    //   // left: Phaser.Keyboard.LEFT,
-    //   // right: Phaser.Keyboard.RIGHT,
-    //   // jump: Phaser.Keyboard.Z,
-    //   // shoot: Phaser.Keyboard.X
-    // };
-    // injectInput(players[3].input)
+    if (game.input.gamepad.pad4.connected) {
+      players[3] = this.createPlayer(130*4, 86*2, 0xFFFF00)
+      players[3].input = {
+        gamepad: game.input.gamepad.pad4,
+        // up: Phaser.Keyboard.UP,
+        // down: Phaser.Keyboard.DOWN,
+        // left: Phaser.Keyboard.LEFT,
+        // right: Phaser.Keyboard.RIGHT,
+        // jump: Phaser.Keyboard.Z,
+        // shoot: Phaser.Keyboard.X
+      };
+      injectInput(players[3].input)
+    }
 }
 
 PlayState.prototype.createPlayer = function(x, y, team) {
@@ -233,6 +237,28 @@ PlayState.prototype.createPlayer = function(x, y, team) {
   player.anchor.set(0.4, 0.5);
   player.sword = sword;
 
+  player.onSideWall = function() {
+    var yAxis = [1, 0]
+    var result = false;
+    for (var i=0; i < game.physics.p2.world.narrowphase.contactEquations.length; i++)
+    {
+      var c = game.physics.p2.world.narrowphase.contactEquations[i];
+      if (c.bodyA === player.body.data || c.bodyB === player.body.data)
+      {
+        var d = p2.vec2.dot(c.normalA, yAxis);
+        if (c.bodyA === player.body.data)
+        {
+          d *= -1;
+        }
+        if (d > 0.5 || d < -0.5)
+        {
+          result = true;
+        }
+      }
+    }
+    return (!result ? false : d)
+  }
+
   player.canJump = function() {
     if (this.jumpCountdown > 0) {
       return false
@@ -254,7 +280,6 @@ PlayState.prototype.createPlayer = function(x, y, team) {
           {
             result = true;
           }
-            result = true;
         }
       }
       return result;
@@ -303,6 +328,11 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       // this.body.velocity.y = -this.jumpForce;
       this.jumpCountdown = 500
       // game.jump.play();
+      game.state.getCurrentState().spawnJumpDust(this.x, this.y + this.height * 0.5)
+    }
+    if (!this.canJump() && this.onSideWall() && this.jumpCountdown < 0) {
+      this.body.moveUp(this.jumpForce)
+      this.jumpCountdown = 500
       game.state.getCurrentState().spawnJumpDust(this.x, this.y + this.height * 0.5)
     }
   };
