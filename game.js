@@ -195,38 +195,38 @@ PlayState.prototype.create = function() {
 PlayState.prototype.createPlayer = function(x, y, team) {
   var player = game.add.sprite(x, y, 'player');
   player.respawnX = x
-    player.respawnY = y
-    player.swordState = Throw.Ready
-    player.animations.add('idle', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 10, true);
+  player.respawnY = y
+  player.swordState = Throw.Ready
+  player.animations.add('idle', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 10, true);
   player.animations.add('jump_upward', [2], 10, false);
   player.animations.add('jump_downward', [3], 10, false);
   player.animations.play('idle');
   player.anchor.set(0.4, 0.5);
   game.physics.p2.enable(player);
   player.body.setMaterial(this.playerMaterial)
-    player.body.fixedRotation = true
-    // player.body.setCircle(15, 5, 0)
-    player.body.setCollisionGroup(this.playerCollisionGroup)
-    player.body.collides([this.groundCollisionGroup])
-    // player.body.debug = true
-    player.body.mass = 10
-    player.body.collideWorldBounds = true;
+  player.body.fixedRotation = true
+  // player.body.setCircle(15, 5, 0)
+  player.body.setCollisionGroup(this.playerCollisionGroup)
+  player.body.collides([this.groundCollisionGroup])
+  // player.body.debug = true
+  player.body.mass = 10
+  player.body.collideWorldBounds = true;
   player.walkForce = 60000;
   player.jumpForce = 460;
   player.fireDelay = 250;
   player.fireCountdown = 0;
   player.team = team
-    player.jumpCountdown = 0
+  player.jumpCountdown = 0
 
-    player.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
-        if (shapeB.material.name == 'ground') {
-        if (this.body.velocity.y < -10 && this.body.velocity.y > -40) {
+  player.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
+    if (shapeB.material.name == 'ground') {
+      if (this.body.velocity.y < -10 && this.body.velocity.y > -40) {
         game.state.getCurrentState().spawnLandingDust(this.x, this.y + this.height * 0.5 - 4)
-        }
-        }
-        // console.log(shapeA.material)
-        // console.log(shapeB.material)
-        }, player)
+      }
+    }
+    // console.log(shapeA.material)
+    // console.log(shapeB.material)
+  }, player)
 
   var sword = game.add.sprite(16*2, 96*2, 'player_sword');
   sword.animations.add('idle', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 10, true);
@@ -351,6 +351,16 @@ PlayState.prototype.createPlayer = function(x, y, team) {
             this.swordState = Throw.Dead
             gameFreeze(0.15, function() {
               game.paused = false
+              if (that.looseSword) {
+                var sword = that.looseSword
+                that.looseSword = null
+                game.add.tween(sword).to({alpha: 0}, 1000)
+                  .start()
+                  .onComplete.add(function() {
+                    this.kill()
+                    this.destroy()
+                  }, sword)
+              }
               player.chain.detach()
               if (that.chain) {
                 if (that.chain.sword.lock) {
@@ -425,7 +435,6 @@ PlayState.prototype.createPlayer = function(x, y, team) {
                     game.state.getCurrentState().spawnLandingDust(player.chain.sword.x, player.chain.sword.y)
                     player.chain.reelIn()
                     player.chain.detach()
-                    that.chain.sprite.kill()
                     if (that.chain) {
                       // spawn broken chain fragments
                       var steps = 0
@@ -443,6 +452,8 @@ PlayState.prototype.createPlayer = function(x, y, team) {
                         return true
                       })
 
+                      that.chain.sprite.kill()
+
                       // create new 'sword pickup' object at old sword's coords
                       var sword = game.add.sprite(that.chain.sword.x, that.chain.sword.y, 'sword')
                       game.physics.p2.enable(sword, false);
@@ -457,6 +468,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
                       sword.body.allowGravity = true
                       sword.body.velocity.x += Math.cos(player.chain.sword.rotation) * 750
                       sword.body.velocity.y += Math.sin(player.chain.sword.rotation) * 750
+                      that.looseSword = sword
                       sword.update = function () {
                         for (var i=0; i < players.length; i++) {
                           if (players[i].swordState === Throw.NoSword) {
