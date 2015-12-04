@@ -33,11 +33,12 @@ PlayState.prototype.preload = function() {
   game.load.spritesheet('player', 'assets/graphics/_player.png', 10*2, 16*2);
   game.load.spritesheet('player_sword', 'assets/graphics/_sword.png', 17*2, 16*2);
   game.load.image('player_sword_slash', 'assets/graphics/_sword_slash.png')
-  game.load.image('sword', 'assets/graphics/_raw_sword.png');
+    game.load.image('sword', 'assets/graphics/_raw_sword.png');
 
   game.load.image('chain', 'assets/graphics/_chain_segment.png')
+    game.load.image('chain_particle', 'assets/graphics/_chain_particle.png')
 
-  game.load.image('textbox', 'assets/graphics/_textbox.png');
+    game.load.image('textbox', 'assets/graphics/_textbox.png');
 
   game.load.audio('gun', 'assets/sounds/gun.wav');
   game.load.audio('jump', 'assets/sounds/jump.wav');
@@ -55,8 +56,8 @@ PlayState.prototype.create = function() {
   game.physics.startSystem(Phaser.Physics.P2JS);
   game.physics.p2.gravity.y = 900;
   game.physics.p2.restitution = 0.1
-  game.physics.p2.world.defaultContactMaterial.friction = 0.5
-  game.physics.p2.world.setGlobalStiffness(1e5);
+    game.physics.p2.world.defaultContactMaterial.friction = 0.5
+    game.physics.p2.world.setGlobalStiffness(1e5);
   // game.physics.p2.TILE_BIAS = 40;
 
   game.gun = game.add.audio('gun');
@@ -77,30 +78,30 @@ PlayState.prototype.create = function() {
   this.playerMaterial = game.physics.p2.createMaterial('player');
   this.chainMaterial = game.physics.p2.createMaterial('chain');
   var groundPlayerCM = game.physics.p2.createContactMaterial(this.groundMaterial, this.playerMaterial)
-  groundPlayerCM.friction = 1.0
-  groundPlayerCM.restitution = 0.15
-  groundPlayerCM.stiffness = 1e7
-  var groundChainCM = game.physics.p2.createContactMaterial(this.groundMaterial, this.chainMaterial)
-  groundChainCM.friction = 0.5
-  groundChainCM.restitution = 0.5
+    groundPlayerCM.friction = 1.0
+    groundPlayerCM.restitution = 0.15
+    groundPlayerCM.stiffness = 1e7
+    var groundChainCM = game.physics.p2.createContactMaterial(this.groundMaterial, this.chainMaterial)
+    groundChainCM.friction = 0.5
+    groundChainCM.restitution = 0.5
 
-  // sword group
-  this.swords = game.add.group()
+    // sword group
+    this.swords = game.add.group()
 
-  this.fg = this.map.createLayer('FG');
+    this.fg = this.map.createLayer('FG');
   this.map.setCollisionBetween(1, 400, true, this.fg);
   this.fg.resizeWorld();
   var tiles = game.physics.p2.convertTilemap(this.map, this.fg)
-  var that = this
-  tiles.forEach(function (tile) {
-    tile.setCollisionGroup(that.groundCollisionGroup)
-    tile.collides([that.playerCollisionGroup, that.chainCollisionGroup])
-    tile.setMaterial(that.groundMaterial)
-    // tile.debug = true
-  })
+    var that = this
+    tiles.forEach(function (tile) {
+        tile.setCollisionGroup(that.groundCollisionGroup)
+        tile.collides([that.playerCollisionGroup, that.chainCollisionGroup])
+        tile.setMaterial(that.groundMaterial)
+        // tile.debug = true
+        })
   game.physics.p2.setBoundsToWorld(true, true, true, true, false)
 
-  game.physics.p2.setWorldMaterial(this.groundMaterial, true, true, true, true);
+    game.physics.p2.setWorldMaterial(this.groundMaterial, true, true, true, true);
 
   // for(var y = 0; y < this.fg.height; ++y){
   //   for(var x = 0; x < this.fg.width; ++x){
@@ -115,14 +116,14 @@ PlayState.prototype.create = function() {
   for (var i=0; i < 10; i++) {
     var sprite = (game.rnd.between(0,100) < 30) ? 'star_big' : 'star_small';
     var star = stars.create(0, 0, sprite)
-    star.reset = function() {
-      this.x = -10;
-      this.y = game.rnd.between(0, 16 * 6);
-      this.speed = game.rnd.frac() * this.maxSpeed;
-    };
+      star.reset = function() {
+        this.x = -10;
+        this.y = game.rnd.between(0, 16 * 6);
+        this.speed = game.rnd.frac() * this.maxSpeed;
+      };
     star.reset()
-    star.x = game.rnd.between(0, game.world.width),
-    star.maxSpeed = (sprite === 'star_big') ? 0.2 : 0.4;
+      star.x = game.rnd.between(0, game.world.width),
+      star.maxSpeed = (sprite === 'star_big') ? 0.2 : 0.4;
     star.speed = game.rnd.frac() * star.maxSpeed;
     star.checkWorldBounds = true;
   }
@@ -134,94 +135,94 @@ PlayState.prototype.create = function() {
   chains = game.add.group();
 
   worldBody = game.add.sprite(0, 0, 'star_small')
-  game.physics.p2.enable(worldBody);
+    game.physics.p2.enable(worldBody);
   worldBody.body.static = true
-  worldBody.body.debug = true
+    worldBody.body.debug = true
 
-  players[0] = this.createPlayer(20*4, 136*2, 0xFF0000)
-  players[0].input = {
-    gamepad: game.input.gamepad.pad1,
-    up: Phaser.Keyboard.UP,
-    down: Phaser.Keyboard.DOWN,
-    left: Phaser.Keyboard.LEFT,
-    right: Phaser.Keyboard.RIGHT,
-    jump: Phaser.Keyboard.Z,
-    shoot: Phaser.Keyboard.X
-  };
+    players[0] = this.createPlayer(20*4, 136*2, 0xFF0000)
+    players[0].input = {
+gamepad: game.input.gamepad.pad1,
+         up: Phaser.Keyboard.UP,
+         down: Phaser.Keyboard.DOWN,
+         left: Phaser.Keyboard.LEFT,
+         right: Phaser.Keyboard.RIGHT,
+         jump: Phaser.Keyboard.Z,
+         shoot: Phaser.Keyboard.X
+    };
   injectInput(players[0].input)
 
-  players[1] = this.createPlayer(45*4, 86*2, 0x00FF00)
-  players[1].input = {
-    gamepad: game.input.gamepad.pad2,
-    up: Phaser.Keyboard.W,
-    down: Phaser.Keyboard.S,
-    left: Phaser.Keyboard.A,
-    right: Phaser.Keyboard.D,
-    jump: Phaser.Keyboard.O,
-    shoot: Phaser.Keyboard.P
-  };
+    players[1] = this.createPlayer(45*4, 86*2, 0x00FF00)
+    players[1].input = {
+gamepad: game.input.gamepad.pad2,
+         up: Phaser.Keyboard.W,
+         down: Phaser.Keyboard.S,
+         left: Phaser.Keyboard.A,
+         right: Phaser.Keyboard.D,
+         jump: Phaser.Keyboard.O,
+         shoot: Phaser.Keyboard.P
+    };
   injectInput(players[1].input)
 
-  // players[2] = this.createPlayer(110*4, 136*2, 0xFF00FF)
-  // players[2].input = {
-  //   gamepad: game.input.gamepad.pad3,
-  //   // up: Phaser.Keyboard.UP,
-  //   // down: Phaser.Keyboard.DOWN,
-  //   // left: Phaser.Keyboard.LEFT,
-  //   // right: Phaser.Keyboard.RIGHT,
-  //   // jump: Phaser.Keyboard.Z,
-  //   // shoot: Phaser.Keyboard.X
-  // };
-  // injectInput(players[2].input)
+    // players[2] = this.createPlayer(110*4, 136*2, 0xFF00FF)
+    // players[2].input = {
+    //   gamepad: game.input.gamepad.pad3,
+    //   // up: Phaser.Keyboard.UP,
+    //   // down: Phaser.Keyboard.DOWN,
+    //   // left: Phaser.Keyboard.LEFT,
+    //   // right: Phaser.Keyboard.RIGHT,
+    //   // jump: Phaser.Keyboard.Z,
+    //   // shoot: Phaser.Keyboard.X
+    // };
+    // injectInput(players[2].input)
 
-  // players[3] = this.createPlayer(130*4, 86*2, 0xFFFF00)
-  // players[3].input = {
-  //   gamepad: game.input.gamepad.pad4,
-  //   // up: Phaser.Keyboard.UP,
-  //   // down: Phaser.Keyboard.DOWN,
-  //   // left: Phaser.Keyboard.LEFT,
-  //   // right: Phaser.Keyboard.RIGHT,
-  //   // jump: Phaser.Keyboard.Z,
-  //   // shoot: Phaser.Keyboard.X
-  // };
-  // injectInput(players[3].input)
+    // players[3] = this.createPlayer(130*4, 86*2, 0xFFFF00)
+    // players[3].input = {
+    //   gamepad: game.input.gamepad.pad4,
+    //   // up: Phaser.Keyboard.UP,
+    //   // down: Phaser.Keyboard.DOWN,
+    //   // left: Phaser.Keyboard.LEFT,
+    //   // right: Phaser.Keyboard.RIGHT,
+    //   // jump: Phaser.Keyboard.Z,
+    //   // shoot: Phaser.Keyboard.X
+    // };
+    // injectInput(players[3].input)
 }
 
 PlayState.prototype.createPlayer = function(x, y, team) {
   var player = game.add.sprite(x, y, 'player');
   player.respawnX = x
-  player.respawnY = y
-  player.swordState = Throw.Ready
-  player.animations.add('idle', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 10, true);
+    player.respawnY = y
+    player.swordState = Throw.Ready
+    player.animations.add('idle', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 10, true);
   player.animations.add('jump_upward', [2], 10, false);
   player.animations.add('jump_downward', [3], 10, false);
   player.animations.play('idle');
   player.anchor.set(0.4, 0.5);
   game.physics.p2.enable(player);
   player.body.setMaterial(this.playerMaterial)
-  player.body.fixedRotation = true
-  // player.body.setCircle(15, 5, 0)
-  player.body.setCollisionGroup(this.playerCollisionGroup)
-  player.body.collides([this.groundCollisionGroup])
-  player.body.debug = true
-  player.body.mass = 10
-  player.body.collideWorldBounds = true;
+    player.body.fixedRotation = true
+    // player.body.setCircle(15, 5, 0)
+    player.body.setCollisionGroup(this.playerCollisionGroup)
+    player.body.collides([this.groundCollisionGroup])
+    // player.body.debug = true
+    player.body.mass = 10
+    player.body.collideWorldBounds = true;
   player.walkForce = 60000;
   player.jumpForce = 460;
   player.fireDelay = 250;
   player.fireCountdown = 0;
   player.team = team
-  player.jumpCountdown = 0
+    player.jumpCountdown = 0
 
-  player.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
-    if (shapeB.material.name == 'ground') {
-      if (this.body.velocity.y < -10 && this.body.velocity.y > -40) {
+    player.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
+        if (shapeB.material.name == 'ground') {
+        if (this.body.velocity.y < -10 && this.body.velocity.y > -40) {
         game.state.getCurrentState().spawnLandingDust(this.x, this.y + this.height * 0.5 - 4)
-      }
-    }
-    // console.log(shapeA.material)
-    // console.log(shapeB.material)
-  }, player)
+        }
+        }
+        // console.log(shapeA.material)
+        // console.log(shapeB.material)
+        }, player)
 
   var sword = game.add.sprite(16*2, 96*2, 'player_sword');
   sword.animations.add('idle', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 10, true);
@@ -389,55 +390,70 @@ PlayState.prototype.createPlayer = function(x, y, team) {
                 if (dist <= 10) {
                   game.state.getCurrentState().spawnLandingDust(player.chain.sword.x, player.chain.sword.y)
                   this.chain.hit = true
-                  this.chain.sprite.tint = 0xFFFFFF
-                  this.chain.sword.tint = 0xFFFFFF
+                  // this.chain.sprite.tint = 0xFFFFFF
+                  // this.chain.sword.tint = 0xFFFFFF
                   player.chain.reelIn()
                   player.chain.detach()
                   var that = this
-                  game.time.events.add(350, function() {
-                    if (that.chain) {
-                      // create new 'sword pickup' object at old sword's coords
-                      var sword = game.add.sprite(that.chain.sword.x, that.chain.sword.y, 'sword')
-                      game.physics.p2.enable(sword, false);
-                      sword.body.mass = 10
-                      sword.body.angularVelocity = game.rnd.between(-10, 10)
-                      // sword.body.debug = true
-                      sword.body.setMaterial(game.state.getCurrentState().chainMaterial)
-                      sword.body.setCollisionGroup(game.state.getCurrentState().chainCollisionGroup)
-                      sword.body.collides([game.state.getCurrentState().groundCollisionGroup, game.state.getCurrentState().chainCollisionGroup])
-                      sword.anchor.set(0.5, 0.5)
-                      sword.body.allowGravity = true
-                      sword.update = function () {
-                        for (var i=0; i < players.length; i++) {
-                          if (players[i].swordState === Throw.NoSword) {
-                            var dist = game.math.distance(players[i].x, players[i].y, this.x, this.y)
-                            // console.log(dist)
-                            if (dist <= 16) {
-                              players[i].swordState = Throw.Ready
-                              this.kill()
-                              this.destroy()
-                              return
-                            }
+                  that.chain.sprite.kill()
+                  if (that.chain) {
+                    // spawn broken chain fragments
+                    var steps = 0
+                    stepAlongLineSeg(start, end, STEP_SIZE / 2, function (x, y) {
+                      var seg = game.state.getCurrentState().spawnChainSeg(x, y)
+                      seg.tint = that.team
+                      var dist = game.math.distance(x, y, player.chain.sword.x, player.chain.sword.y) + 0.01
+                      var impact = 50 - dist/5
+                      impact = Math.max(0, impact * 15)
+                      seg.body.velocity.x += Math.cos(player.chain.sword.rotation) * impact + game.rnd.between(-5, 5)
+                      seg.body.velocity.y += Math.sin(player.chain.sword.rotation) * impact + game.rnd.between(-5, 5)
+                      seg.lifetime = 3 + steps * 0.02
+                      steps++
+                      return true
+                    })
+
+                    // create new 'sword pickup' object at old sword's coords
+                    var sword = game.add.sprite(that.chain.sword.x, that.chain.sword.y, 'sword')
+                    game.physics.p2.enable(sword, false);
+                    sword.tint = that.team
+                    sword.body.mass = 10
+                    sword.body.angularVelocity = game.rnd.between(-10, 10)
+                    // sword.body.debug = true
+                    sword.body.setMaterial(game.state.getCurrentState().chainMaterial)
+                    sword.body.setCollisionGroup(game.state.getCurrentState().chainCollisionGroup)
+                    sword.body.collides([game.state.getCurrentState().groundCollisionGroup, game.state.getCurrentState().chainCollisionGroup])
+                    sword.anchor.set(0.5, 0.5)
+                    sword.body.allowGravity = true
+                    sword.update = function () {
+                      for (var i=0; i < players.length; i++) {
+                        if (players[i].swordState === Throw.NoSword) {
+                          var dist = game.math.distance(players[i].x, players[i].y, this.x, this.y)
+                          // console.log(dist)
+                          if (dist <= 16) {
+                            players[i].swordState = Throw.Ready
+                            this.kill()
+                            this.destroy()
+                            return
                           }
                         }
                       }
-                      sword.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
-                        if (shapeB.material && shapeB.material.name == 'ground') {
-                          if (Math.abs(this.body.velocity.y) > 10) {
-                            game.state.getCurrentState().spawnLandingDust(this.x, this.y)
-                          }
-                        } else {
-                          this.body.angularVelocity += 50
-                          this.body.velocity.y += -100
-                        }
-                      }, sword)
-                      game.physics.p2.removeConstraint(that.chain.sword.lock)
-                      that.chain.sprite.kill()
-                      that.chain.sword.kill()
-                      that.chain = null
                     }
-                    that.swordState = Throw.NoSword
-                  })
+                    sword.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
+                      if (shapeB.material && shapeB.material.name == 'ground') {
+                        if (Math.abs(this.body.velocity.y) > 10) {
+                          game.state.getCurrentState().spawnLandingDust(this.x, this.y)
+                        }
+                      } else {
+                        this.body.angularVelocity += 30
+                        this.body.velocity.y += -35
+                      }
+                    }, sword)
+                    game.physics.p2.removeConstraint(that.chain.sword.lock)
+                    that.chain.sword.kill()
+                    that.chain = null
+                  }
+                  that.swordState = Throw.NoSword
+                  break
                 }
                 pos[0] += step[0]
                 pos[1] += step[1]
@@ -589,7 +605,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     sword.body.allowGravity = false
     sword.body.fixedRotation = true
     sword.done = false
-    sword.body.debug = true
+    // sword.body.debug = true
     var SWORD_SPEED = 600
     sword.update = function () {
       if (!this.hitGround) {
@@ -602,7 +618,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       }
     }
     sword.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
-      if (!this.done && !this.hitGround && shapeB.material.name === 'ground') {
+      if (!this.done && !this.hitGround && shapeB.material && shapeB.material.name === 'ground') {
         // console.log(equation)
         // var swordDir = [dirX, dirY]
         // var dot1 = p2.vec2.dot(equation[0].normalA, swordDir)
@@ -743,6 +759,63 @@ PlayState.prototype.spawnDeathDust = function(player) {
     dust.body.velocity.x = Math.cos(ang) * game.rnd.between(25, 75)
     dust.body.velocity.y = Math.sin(ang) * game.rnd.between(25, 75)
     dust.tint = player.team
+  }
+}
+
+PlayState.prototype.spawnChainSeg = function(x, y) {
+  var chain = game.add.sprite(x, y, 'chain_particle')
+  game.physics.p2.enable(chain, false);
+  chain.body.mass = 1
+  chain.body.setCircle(6)
+  chain.body.angularVelocity = game.rnd.between(-5, 5)
+  chain.body.velocity.y = 50
+  // chain.body.debug = true
+  chain.body.setMaterial(game.state.getCurrentState().chainMaterial)
+  chain.body.setCollisionGroup(game.state.getCurrentState().chainCollisionGroup)
+  chain.body.collides([game.state.getCurrentState().groundCollisionGroup])
+  chain.anchor.set(0.5, 0.5)
+  chain.body.allowGravity = true
+
+
+  chain.lifetime = 5
+  var fading = false
+  chain.update = function () {
+    this.lifetime -= game.time.physicsElapsed
+    if (this.lifetime < 0.5) {
+      if (!fading) {
+        game.add.tween(chain).to({alpha: 0}, 500).start();
+        fading = true
+      }
+    }
+    if (this.lifetime < 0) {
+      // game.state.getCurrentState().spawnOmniDust(this.x, this.y)
+      this.destroy()
+    }
+  }
+
+  // chain.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
+  //   game.state.getCurrentState().spawnLandingDust(this.x, this.y + this.height * 0.5 - 4)
+  //   this.destroy()
+  // }, chain)
+
+  return chain
+}
+
+function stepAlongLineSeg(start, end, STEP_SIZE, cb) {
+  var step = [end[0] - start[0], end[1] - start[1]]
+  var len = Math.sqrt(step[0]*step[0] + step[1]*step[1])
+  var pos = [start[0], start[1]]
+  if (len > 0) {
+    var STEP_SIZE = 16
+    step[0] = (step[0] / len) * STEP_SIZE
+    step[1] = (step[1] / len) * STEP_SIZE
+    var steps = len / STEP_SIZE
+    for (var i=0; i < steps; i++) {
+      var ret = cb(pos[0], pos[1])
+      if (!ret) { break }
+      pos[0] += step[0]
+      pos[1] += step[1]
+    }
   }
 }
 
