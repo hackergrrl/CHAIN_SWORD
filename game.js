@@ -317,10 +317,9 @@ PlayState.prototype.createPlayer = function(x, y, team) {
         if (player.chain) {
           var dist = game.math.distance(this.x, this.y, player.chain.sword.x, player.chain.sword.y)
           if (dist <= 16 && this.visible) {
-            game.paused = true
             var that = this
             this.swordState = Throw.Dead
-            setTimeout(function() {
+            gameFreeze(0.15, function() {
               game.paused = false
               player.chain.detach()
               if (that.chain) {
@@ -335,7 +334,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
               that.visible = false
               that.body.moveLeft(10000)
               that.body.moveDown(10000)
-            }, 150)
+            })
             game.time.events.add(5000, function() {
               this.body.x = this.respawnX
               this.body.y = this.respawnY
@@ -386,77 +385,80 @@ PlayState.prototype.createPlayer = function(x, y, team) {
             var player = players[i]
             if (player.chain) {
               var pos = [start[0], start[1]]
-              for (var i=0; i < steps; i++) {
+              var done = false
+              for (var i=0; i < steps && !done; i++) {
                 var dist = game.math.distance(pos[0], pos[1], player.chain.sword.x, player.chain.sword.y)
                 if (dist <= 10) {
-                  game.state.getCurrentState().spawnLandingDust(player.chain.sword.x, player.chain.sword.y)
-                  this.chain.hit = true
-                  // this.chain.sprite.tint = 0xFFFFFF
-                  // this.chain.sword.tint = 0xFFFFFF
-                  player.chain.reelIn()
-                  player.chain.detach()
                   var that = this
-                  that.chain.sprite.kill()
-                  if (that.chain) {
-                    // spawn broken chain fragments
-                    var steps = 0
-                    stepAlongLineSeg(start, end, STEP_SIZE / 2, function (x, y) {
-                      var seg = game.state.getCurrentState().spawnChainSeg(x, y)
-                      seg.tint = that.team
-                      var dist = game.math.distance(x, y, player.chain.sword.x, player.chain.sword.y) + 0.01
-                      var impact = 50 - dist/5
-                      impact = Math.max(0, impact * 15)
-                      seg.body.velocity.x += Math.cos(player.chain.sword.rotation) * impact + game.rnd.between(-5, 5)
-                      seg.body.velocity.y += Math.sin(player.chain.sword.rotation) * impact + game.rnd.between(-5, 5)
-                      seg.lifetime = 3 + steps * 0.02
-                      steps++
-                      return true
-                    })
+                  this.chain.hit = true
+                  gameFreeze(0.1, function() {
+                    game.state.getCurrentState().spawnLandingDust(player.chain.sword.x, player.chain.sword.y)
+                    player.chain.reelIn()
+                    player.chain.detach()
+                    that.chain.sprite.kill()
+                    if (that.chain) {
+                      // spawn broken chain fragments
+                      var steps = 0
+                      stepAlongLineSeg(start, end, STEP_SIZE / 2, function (x, y) {
+                        var seg = game.state.getCurrentState().spawnChainSeg(x, y)
+                        seg.tint = that.team
+                        seg.alpha = 0.6
+                        var dist = game.math.distance(x, y, player.chain.sword.x, player.chain.sword.y) + 0.01
+                        var impact = 50 - dist/5
+                        impact = Math.max(0, impact * 15)
+                        seg.body.velocity.x += Math.cos(player.chain.sword.rotation) * impact + game.rnd.between(-5, 5)
+                        seg.body.velocity.y += Math.sin(player.chain.sword.rotation) * impact + game.rnd.between(-5, 5)
+                        seg.lifetime = 3 + steps * 0.02
+                        steps++
+                        return true
+                      })
 
-                    // create new 'sword pickup' object at old sword's coords
-                    var sword = game.add.sprite(that.chain.sword.x, that.chain.sword.y, 'sword')
-                    game.physics.p2.enable(sword, false);
-                    sword.tint = that.team
-                    sword.body.mass = 10
-                    sword.body.angularVelocity = game.rnd.between(-10, 10)
-                    // sword.body.debug = true
-                    sword.body.setMaterial(game.state.getCurrentState().chainMaterial)
-                    sword.body.setCollisionGroup(game.state.getCurrentState().chainCollisionGroup)
-                    sword.body.collides([game.state.getCurrentState().groundCollisionGroup, game.state.getCurrentState().chainCollisionGroup])
-                    sword.anchor.set(0.5, 0.5)
-                    sword.body.allowGravity = true
-                    sword.body.velocity.x += Math.cos(player.chain.sword.rotation) * 750
-                    sword.body.velocity.y += Math.sin(player.chain.sword.rotation) * 750
-                    sword.update = function () {
-                      for (var i=0; i < players.length; i++) {
-                        if (players[i].swordState === Throw.NoSword) {
-                          var dist = game.math.distance(players[i].x, players[i].y, this.x, this.y)
-                          // console.log(dist)
-                          if (dist <= 16) {
-                            players[i].swordState = Throw.Ready
-                            this.kill()
-                            this.destroy()
-                            return
+                      // create new 'sword pickup' object at old sword's coords
+                      var sword = game.add.sprite(that.chain.sword.x, that.chain.sword.y, 'sword')
+                      game.physics.p2.enable(sword, false);
+                      sword.tint = that.team
+                      sword.body.mass = 10
+                      sword.body.angularVelocity = game.rnd.between(-10, 10)
+                      // sword.body.debug = true
+                      sword.body.setMaterial(game.state.getCurrentState().chainMaterial)
+                      sword.body.setCollisionGroup(game.state.getCurrentState().chainCollisionGroup)
+                      sword.body.collides([game.state.getCurrentState().groundCollisionGroup, game.state.getCurrentState().chainCollisionGroup])
+                      sword.anchor.set(0.5, 0.5)
+                      sword.body.allowGravity = true
+                      sword.body.velocity.x += Math.cos(player.chain.sword.rotation) * 750
+                      sword.body.velocity.y += Math.sin(player.chain.sword.rotation) * 750
+                      sword.update = function () {
+                        for (var i=0; i < players.length; i++) {
+                          if (players[i].swordState === Throw.NoSword) {
+                            var dist = game.math.distance(players[i].x, players[i].y, this.x, this.y)
+                            // console.log(dist)
+                            if (dist <= 16) {
+                              players[i].swordState = Throw.Ready
+                              this.kill()
+                              this.destroy()
+                              return
+                            }
                           }
                         }
                       }
-                    }
-                    sword.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
-                      if (shapeB.material && shapeB.material.name == 'ground') {
-                        if (Math.abs(this.body.velocity.y) > 10) {
-                          game.state.getCurrentState().spawnLandingDust(this.x, this.y)
+                      sword.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
+                        if (shapeB.material && shapeB.material.name == 'ground') {
+                          if (Math.abs(this.body.velocity.y) > 10) {
+                            game.state.getCurrentState().spawnLandingDust(this.x, this.y)
+                          }
+                        } else {
+                          this.body.angularVelocity += 30
+                          this.body.velocity.y += -35
                         }
-                      } else {
-                        this.body.angularVelocity += 30
-                        this.body.velocity.y += -35
-                      }
-                    }, sword)
-                    game.physics.p2.removeConstraint(that.chain.sword.lock)
-                    that.chain.sword.kill()
-                    that.chain = null
-                  }
-                  that.swordState = Throw.NoSword
-                  break
+                      }, sword)
+                      game.physics.p2.removeConstraint(that.chain.sword.lock)
+                      that.chain.sword.kill()
+                      that.chain = null
+                    }
+                    that.swordState = Throw.NoSword
+                    done = true
+                    return
+                  })
                 }
                 pos[0] += step[0]
                 pos[1] += step[1]
@@ -820,6 +822,14 @@ function stepAlongLineSeg(start, end, STEP_SIZE, cb) {
       pos[1] += step[1]
     }
   }
+}
+
+function gameFreeze(duration, cb) {
+  game.paused = true
+  setTimeout(function() {
+    game.paused = false
+    cb()
+  }, duration * 1000)
 }
 
 var w = 160 * 4;
