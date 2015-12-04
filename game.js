@@ -254,6 +254,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
           {
             result = true;
           }
+            result = true;
         }
       }
       return result;
