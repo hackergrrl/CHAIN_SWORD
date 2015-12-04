@@ -12,7 +12,8 @@ var Throw = {
   PullingSelf: 4,
   PullingSword: 5,
   Slashing: 6,
-  NoSword: 7
+  NoSword: 7,
+  Dead: 8
 }
 
 function PlayState(game) {
@@ -198,9 +199,9 @@ PlayState.prototype.createPlayer = function(x, y, team) {
   // player.body.debug = true
   player.body.mass = 10
   player.body.collideWorldBounds = true;
-  player.walkForce = 30000;
+  player.walkForce = 60000;
   player.jumpForce = 460;
-  player.fireDelay = 150;
+  player.fireDelay = 250;
   player.fireCountdown = 0;
   player.team = team
   player.jumpCountdown = 0
@@ -309,6 +310,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
           if (dist <= 16 && this.visible) {
             game.paused = true
             var that = this
+            this.swordState = Throw.Dead
             setTimeout(function() {
               game.paused = false
               player.chain.reelIn()
@@ -329,6 +331,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
             game.time.events.add(5000, function() {
               this.body.x = this.respawnX
               this.body.y = this.respawnY
+              this.fireCountdown = 500
               this.swordState = Throw.Ready
               this.body.velocity.x = 0
               this.body.velocity.y = 0
@@ -466,7 +469,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     // if (game.input.keyboard.justPressed(this.input.shoot)) {
     if (this.input.isShooting()) {
       // Throw sword
-      if (this.swordState === Throw.Ready) {
+      if (this.swordState === Throw.Ready && this.fireCountdown <= 0) {
         var dirX = this.scale.x
         var dirY = 0
         // if (game.input.keyboard.isDown(this.input.up)) {
@@ -487,7 +490,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
 
     // Detach sword from target
     // if (game.input.keyboard.justReleased(this.input.shoot)) {
-    if (!this.input.isShooting()) {
+    if (!this.input.isShooting() && this.chain) {
       if (this.swordState === Throw.PullingSelf || this.swordState === Throw.PullingSword) {
         this.chain.detach()
       }
@@ -511,7 +514,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     this.sword.y = this.y - this.anchor.y * this.height + this.body.velocity.y * game.time.physicsElapsed
 
     // reel sword back in
-    if (this.swordState === Throw.PullingSelf || this.swordState === Throw.PullingSword) {
+    if (this.chain && (this.swordState === Throw.PullingSelf || this.swordState === Throw.PullingSword)) {
       var sword = this.chain.sword
       if (this.swordState === Throw.PullingSelf) {
         this.pullAccum += 20
@@ -535,6 +538,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
         this.chain.sprite.kill()
         this.chain = null
         this.swordState = Throw.Ready
+        this.fireCountdown = this.fireDelay;
       }
     }
   };
@@ -571,6 +575,22 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     }
     sword.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
       if (!this.done && !this.hitGround && shapeB.material.name === 'ground') {
+
+        console.dir(equation)
+        // var c = game.physics.p2.world.narrowphase.contactEquations[i];
+        // if (c.bodyA === player.body.data || c.bodyB === player.body.data)
+        // {
+        //   var d = p2.vec2.dot(c.normalA, yAxis);
+        //   if (c.bodyA === player.body.data)
+        //   {
+        //     d *= -1;
+        //   }
+        //   if (d > 0.5)
+        //   {
+        //     result = true;
+        //   }
+        // }
+
         this.hitGround = true
         game.state.getCurrentState().spawnOmniDust(this.x, this.y)
         var maxForce = 2000000
