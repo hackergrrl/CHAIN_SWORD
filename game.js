@@ -425,6 +425,8 @@ PlayState.prototype.createPlayer = function(x, y, team) {
                     sword.body.collides([game.state.getCurrentState().groundCollisionGroup, game.state.getCurrentState().chainCollisionGroup])
                     sword.anchor.set(0.5, 0.5)
                     sword.body.allowGravity = true
+                    sword.body.velocity.x += Math.cos(player.chain.sword.rotation) * 750
+                    sword.body.velocity.y += Math.sin(player.chain.sword.rotation) * 750
                     sword.update = function () {
                       for (var i=0; i < players.length; i++) {
                         if (players[i].swordState === Throw.NoSword) {
