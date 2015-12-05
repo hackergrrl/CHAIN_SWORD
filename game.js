@@ -354,12 +354,11 @@ PlayState.prototype.createPlayer = function(x, y, team) {
               if (that.looseSword) {
                 var sword = that.looseSword
                 that.looseSword = null
-                game.add.tween(sword).to({alpha: 0}, 1000)
-                  .start()
-                  .onComplete.add(function() {
-                    this.kill()
-                    this.destroy()
-                  }, sword)
+                var tween = game.add.tween(sword).to({alpha: 0}, 1000)
+                tween.onComplete.add(function() {
+                  this.destroy()
+                }, sword)
+                tween.start()
               }
               player.chain.detach()
               if (that.chain) {
