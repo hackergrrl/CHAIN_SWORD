@@ -633,12 +633,12 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       dirY = 1
       dirX = 0
     }
-    if (this.input.isLeft()) {
-      dirX = -1
-    }
-    if (this.input.isRight()) {
-      dirX = 1
-    }
+    // if (this.input.isLeft()) {
+    //   dirX = -1
+    // }
+    // if (this.input.isRight()) {
+    //   dirX = 1
+    // }
 
     return [dirX, dirY]
   }
