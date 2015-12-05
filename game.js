@@ -33,10 +33,10 @@ PlayState.prototype.preload = function() {
   game.load.spritesheet('player', 'assets/graphics/_player.png', 10*2, 16*2);
   game.load.spritesheet('player_sword', 'assets/graphics/_sword.png', 17*2, 16*2);
   game.load.image('player_sword_slash', 'assets/graphics/_sword_slash.png')
-    game.load.image('sword', 'assets/graphics/_raw_sword.png');
+  game.load.image('sword', 'assets/graphics/_raw_sword.png');
 
   game.load.image('chain', 'assets/graphics/_chain_segment.png')
-    game.load.image('chain_particle', 'assets/graphics/_chain_particle.png')
+  game.load.image('chain_particle', 'assets/graphics/_chain_particle.png')
 
     game.load.image('textbox', 'assets/graphics/_textbox.png');
 
@@ -465,8 +465,8 @@ PlayState.prototype.createPlayer = function(x, y, team) {
                       sword.body.collides([game.state.getCurrentState().groundCollisionGroup, game.state.getCurrentState().chainCollisionGroup])
                       sword.anchor.set(0.5, 0.5)
                       sword.body.allowGravity = true
-                      sword.body.velocity.x += Math.cos(player.chain.sword.rotation) * 750
-                      sword.body.velocity.y += Math.sin(player.chain.sword.rotation) * 750
+                      sword.body.velocity.x += Math.cos(player.chain.sword.rotation) * 450
+                      sword.body.velocity.y += Math.sin(player.chain.sword.rotation) * 450
                       that.looseSword = sword
                       sword.update = function () {
                         for (var i=0; i < players.length; i++) {
@@ -530,6 +530,9 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       this.animations.play('jump_downward');
       this.sword.animations.play('jump_downward');
     }
+    if (this.swordState === Throw.PullingSelf) {
+      this.animations.play('jump_upward');
+    }
 
     if (this.input.isLeft() && this.body.velocity.x < 6) {
       this.body.force.x += -this.walkForce;
@@ -551,19 +554,8 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     if (this.input.isShooting()) {
       // Throw sword
       if (this.swordState === Throw.Ready && this.fireCountdown <= 0) {
-        var dirX = this.scale.x
-        var dirY = 0
-        // if (game.input.keyboard.isDown(this.input.up)) {
-        if (this.input.isUp()) {
-          dirY = -1
-          dirX = 0
-        }
-        // if (game.input.keyboard.isDown(this.input.down)) {
-        if (this.input.isDown()) {
-          dirY = 1
-          dirX = 0
-        }
-        this.shootChain(dirX, dirY)
+        var dir = this.getAimDir()
+        this.shootChain(dir[0], dir[1])
         this.fireCountdown = this.fireDelay;
         // game.gun.play();
       }
@@ -628,6 +620,29 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     }
   };
 
+  player.getAimDir = function() {
+    var dirX = this.scale.x
+    var dirY = 0
+    // if (game.input.keyboard.isDown(this.input.up)) {
+    if (this.input.isUp()) {
+      dirY = -1
+      dirX = 0
+    }
+    // if (game.input.keyboard.isDown(this.input.down)) {
+    if (this.input.isDown()) {
+      dirY = 1
+      dirX = 0
+    }
+    if (this.input.isLeft()) {
+      dirX = -1
+    }
+    if (this.input.isRight()) {
+      dirX = 1
+    }
+
+    return [dirX, dirY]
+  }
+
   player.shootChain = function(dirX, dirY) {
     this.pullAccum = 0
     var lastSeg;
@@ -685,9 +700,6 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       }
     }, sword)
 
-    // var pt1 = new Phaser.Point(player.x, player.y)
-    // var pt2 = new Phaser.Point(player.x, player.y)
-    // var chain = game.add.rope(player.x, player.y, 'chain', null, [pt1, pt2])
     var chain = this.game.add.tileSprite(player.x, player.y, 128, 9, 'chain');
     chain.anchor.set(0, 0.5)
     chain.tint = player.team
@@ -896,6 +908,8 @@ Phaser.TileSprite.prototype.kill = function() {
     return this;
 };
 
+var DEAD_ZONE = 0.5
+
 function injectInput(input) {
   input.isJumping = function() {
     return game.input.keyboard.isDown(this.jump)
@@ -908,15 +922,15 @@ function injectInput(input) {
         && this.gamepad._buttons[1].isDown);
   };
   input.isLeft = function() {
-    return game.input.keyboard.isDown(this.left) || (this.gamepad && this.gamepad.connected && this.gamepad._axes[0] < 0)
+    return game.input.keyboard.isDown(this.left) || (this.gamepad && this.gamepad.connected && this.gamepad._axes[0] < -DEAD_ZONE)
   }
   input.isRight = function() {
-    return game.input.keyboard.isDown(this.right) || (this.gamepad && this.gamepad.connected && this.gamepad._axes[0] > 0)
+    return game.input.keyboard.isDown(this.right) || (this.gamepad && this.gamepad.connected && this.gamepad._axes[0] > DEAD_ZONE)
   }
   input.isUp = function() {
-    return game.input.keyboard.isDown(this.up) || (this.gamepad && this.gamepad.connected && this.gamepad._axes[1] < 0)
+    return game.input.keyboard.isDown(this.up) || (this.gamepad && this.gamepad.connected && this.gamepad._axes[1] < -DEAD_ZONE)
   }
   input.isDown = function() {
-    return game.input.keyboard.isDown(this.down) || (this.gamepad && this.gamepad.connected && this.gamepad._axes[1] > 0)
+    return game.input.keyboard.isDown(this.down) || (this.gamepad && this.gamepad.connected && this.gamepad._axes[1] > DEAD_ZONE)
   }
 }
