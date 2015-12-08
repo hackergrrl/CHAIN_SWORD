@@ -657,7 +657,7 @@ PlayState.prototype.createPlayer = function(team) {
       } else if (this.swordState === Throw.PullingSword) {
         var angle = game.math.angleBetween(sword.x, sword.y, this.x, this.y)
         this.pullAccum += 40
-        var pullForce = Math.min(500, this.pullAccum)
+        var pullForce = Math.min(650, this.pullAccum)
         sword.body.moveRight(Math.cos(angle) * pullForce)
         sword.body.moveDown(Math.sin(angle) * pullForce)
         sword.body.rotation = angle - Math.PI
@@ -721,7 +721,7 @@ PlayState.prototype.createPlayer = function(team) {
     sword.body.fixedRotation = true
     sword.done = false
     // sword.body.debug = true
-    var SWORD_SPEED = 600
+    var SWORD_SPEED = 750
     sword.update = function () {
       if (!this.hitGround) {
         sword.body.moveRight(SWORD_SPEED * dirX)
