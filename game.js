@@ -56,8 +56,8 @@ PlayState.prototype.create = function() {
   game.physics.startSystem(Phaser.Physics.P2JS);
   game.physics.p2.gravity.y = 900;
   game.physics.p2.restitution = 0.1
-    game.physics.p2.world.defaultContactMaterial.friction = 0.5
-    game.physics.p2.world.setGlobalStiffness(1e5);
+  game.physics.p2.world.defaultContactMaterial.friction = 0.5
+  game.physics.p2.world.setGlobalStiffness(1e5);
   // game.physics.p2.TILE_BIAS = 40;
 
   game.gun = game.add.audio('gun');
@@ -89,17 +89,17 @@ PlayState.prototype.create = function() {
   this.playerMaterial = game.physics.p2.createMaterial('player');
   this.chainMaterial = game.physics.p2.createMaterial('chain');
   var groundPlayerCM = game.physics.p2.createContactMaterial(this.groundMaterial, this.playerMaterial)
-    groundPlayerCM.friction = 1.0
-    groundPlayerCM.restitution = 0.15
-    groundPlayerCM.stiffness = 1e7
-    var groundChainCM = game.physics.p2.createContactMaterial(this.groundMaterial, this.chainMaterial)
-    groundChainCM.friction = 0.5
-    groundChainCM.restitution = 0.5
+  groundPlayerCM.friction = 1.0
+  groundPlayerCM.restitution = 0.15
+  groundPlayerCM.stiffness = 1e7
+  var groundChainCM = game.physics.p2.createContactMaterial(this.groundMaterial, this.chainMaterial)
+  groundChainCM.friction = 0.3
+  groundChainCM.restitution = 0.5
 
-    // sword group
-    this.swords = game.add.group()
+  // sword group
+  this.swords = game.add.group()
 
-    this.fg = this.map.createLayer('FG');
+  this.fg = this.map.createLayer('FG');
   this.map.setCollisionBetween(1, 400, true, this.fg);
   this.fg.resizeWorld();
   var tiles = game.physics.p2.convertTilemap(this.map, this.fg)
@@ -230,6 +230,7 @@ PlayState.prototype.createPlayer = function(team) {
   player.fireCountdown = 0;
   player.team = team
   player.jumpCountdown = 0
+  player.psychicCountdown = 0
 
   player.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
     if (shapeB.material.name == 'ground') {
@@ -488,9 +489,13 @@ PlayState.prototype.createPlayer = function(team) {
                             var dist = game.math.distance(players[i].x, players[i].y, this.x, this.y)
                             // console.log(dist)
                             if (dist <= 16) {
-                              players[i].swordState = Throw.Ready
-                              this.kill()
-                              this.destroy()
+                              var that = this
+                              gameFreeze(0.1, function() {
+                                players[i].swordState = Throw.Ready
+                                players[i].fireCountdown = 500
+                                that.kill()
+                                that.destroy()
+                              })
                               return
                             }
                           }
@@ -563,6 +568,10 @@ PlayState.prototype.createPlayer = function(team) {
       // this.body.force.x = 0
     }
 
+    if (this.looseSword) {
+      this.looseSword.tint = this.team
+    }
+
     // Shoot
     // if (game.input.keyboard.justPressed(this.input.shoot)) {
     if (this.input.isShooting()) {
@@ -573,6 +582,21 @@ PlayState.prototype.createPlayer = function(team) {
         this.fireCountdown = this.fireDelay;
         // game.gun.play();
       }
+      // Summon sword
+      if (this.swordState == Throw.NoSword && (this.psychicCountdown > 0 || (this.psychicCountdown > -3000 && this.wasUsingPsychicLastFrame))) {
+        var angle = game.math.angleBetween(this.x, this.y, this.looseSword.x, this.looseSword.y)
+        var force = [Math.cos(angle) * -100, Math.sin(angle) * -100]
+        // this.looseSword.body.force.x += force[0]
+        // this.looseSword.body.force.y += force[1]
+        this.looseSword.body.moveRight(force[0])
+        this.looseSword.body.moveDown(force[1])
+        this.looseSword.tint = 0xFFFFFF
+        this.psychicCountdown -= game.time.elapsed
+        this.wasUsingPsychicLastFrame = true
+      }
+    } else {
+      this.psychicCountdown += game.time.elapsed * 4
+      this.psychicCountdown = Math.min(1, this.psychicCountdown)
     }
 
     // Detach sword from target
