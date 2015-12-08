@@ -420,13 +420,13 @@ PlayState.prototype.createPlayer = function(x, y, team) {
         if (players[i] !== this && players[i].chain && players[i].chain.sword) {
           var player = players[i]
           var dist = game.math.distance(player.chain.sword.x, player.chain.sword.y, this.chain.sword.x, this.chain.sword.y)
-          if (dist <= 17) {
+          if (dist <= 17 && !this.chain.hit) {
             if (!player.chain.sword.lock) {
-              player.chain.detach() 
+              player.chain.detach()
               player.chain.hit = true
             }
             if (!this.chain.sword.lock) {
-              this.chain.detach() 
+              this.chain.detach()
               this.chain.hit = true
             }
             game.state.getCurrentState().spawnOmniDust(this.chain.sword.x, this.chain.sword.y)
