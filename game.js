@@ -27,7 +27,7 @@ PlayState.prototype.preload = function() {
 
   game.load.spritesheet('dust', 'assets/graphics/_dust.png', 8, 8);
 
-  game.load.tilemap('level1', 'assets/maps/tfall.json', null, Phaser.Tilemap.TILED_JSON);
+  game.load.tilemap('level1', 'assets/maps/sgunn.json', null, Phaser.Tilemap.TILED_JSON);
   game.load.image('tileset', 'assets/graphics/_tileset.png');
 
   game.load.spritesheet('player', 'assets/graphics/_player.png', 10*2, 16*2);
@@ -147,68 +147,66 @@ PlayState.prototype.create = function() {
   chains = game.add.group();
 
   worldBody = game.add.sprite(0, 0, 'star_small')
-    game.physics.p2.enable(worldBody);
+  game.physics.p2.enable(worldBody);
   worldBody.body.static = true
-    worldBody.body.debug = true
+  worldBody.body.debug = true
 
-    players[0] = this.createPlayer(0xFF0000)
-    players[0].input = {
-         gamepad: game.input.gamepad.pad1,
-         up: Phaser.Keyboard.UP,
-         down: Phaser.Keyboard.DOWN,
-         left: Phaser.Keyboard.LEFT,
-         right: Phaser.Keyboard.RIGHT,
-         jump: Phaser.Keyboard.Z,
-         shoot: Phaser.Keyboard.X
+  players[0] = this.createPlayer(spawns[0].x, spawns[0].y, 0xFF0000)
+  players[0].input = {
+        gamepad: game.input.gamepad.pad1,
+        up: Phaser.Keyboard.UP,
+        down: Phaser.Keyboard.DOWN,
+        left: Phaser.Keyboard.LEFT,
+        right: Phaser.Keyboard.RIGHT,
+        jump: Phaser.Keyboard.Z,
+        shoot: Phaser.Keyboard.X
+  };
+  injectInput(players[0].input)
+
+  players[1] = this.createPlayer(spawns[1].x, spawns[1].y, 0x00FF00)
+  players[1].input = {
+        gamepad: game.input.gamepad.pad2,
+        up: Phaser.Keyboard.W,
+        down: Phaser.Keyboard.S,
+        left: Phaser.Keyboard.A,
+        right: Phaser.Keyboard.D,
+        jump: Phaser.Keyboard.O,
+        shoot: Phaser.Keyboard.P
+  };
+  injectInput(players[1].input)
+
+  if (game.input.gamepad.pad3.connected) {
+    players[2] = this.createPlayer(spawns[2].x, spawns[2].y, 0xFF00FF)
+    players[2].input = {
+      gamepad: game.input.gamepad.pad3,
+      // up: Phaser.Keyboard.UP,
+      // down: Phaser.Keyboard.DOWN,
+      // left: Phaser.Keyboard.LEFT,
+      // right: Phaser.Keyboard.RIGHT,
+      // jump: Phaser.Keyboard.Z,
+      // shoot: Phaser.Keyboard.X
     };
-    injectInput(players[0].input)
+    injectInput(players[2].input)
+  }
 
-    players[1] = this.createPlayer(0x00FF00)
-    players[1].input = {
-         gamepad: game.input.gamepad.pad2,
-         up: Phaser.Keyboard.W,
-         down: Phaser.Keyboard.S,
-         left: Phaser.Keyboard.A,
-         right: Phaser.Keyboard.D,
-         jump: Phaser.Keyboard.O,
-         shoot: Phaser.Keyboard.P
+  if (game.input.gamepad.pad4.connected) {
+    players[3] = this.createPlayer(spawns[3].x, spawns[3].y, 0xFFFF00)
+    players[3].input = {
+      gamepad: game.input.gamepad.pad4,
+      // up: Phaser.Keyboard.UP,
+      // down: Phaser.Keyboard.DOWN,
+      // left: Phaser.Keyboard.LEFT,
+      // right: Phaser.Keyboard.RIGHT,
+      // jump: Phaser.Keyboard.Z,
+      // shoot: Phaser.Keyboard.X
     };
-    injectInput(players[1].input)
-
-    if (game.input.gamepad.pad3.connected) {
-      players[2] = this.createPlayer(0xFF00FF)
-      players[2].input = {
-        gamepad: game.input.gamepad.pad3,
-        // up: Phaser.Keyboard.UP,
-        // down: Phaser.Keyboard.DOWN,
-        // left: Phaser.Keyboard.LEFT,
-        // right: Phaser.Keyboard.RIGHT,
-        // jump: Phaser.Keyboard.Z,
-        // shoot: Phaser.Keyboard.X
-      };
-      injectInput(players[2].input)
-    }
-
-    if (game.input.gamepad.pad4.connected) {
-      players[3] = this.createPlayer(0xFFFF00)
-      players[3].input = {
-        gamepad: game.input.gamepad.pad4,
-        // up: Phaser.Keyboard.UP,
-        // down: Phaser.Keyboard.DOWN,
-        // left: Phaser.Keyboard.LEFT,
-        // right: Phaser.Keyboard.RIGHT,
-        // jump: Phaser.Keyboard.Z,
-        // shoot: Phaser.Keyboard.X
-      };
-      injectInput(players[3].input)
-    }
+    injectInput(players[3].input)
+  }
 }
 
-PlayState.prototype.createPlayer = function(team) {
+PlayState.prototype.createPlayer = function(x, y, team) {
   var spawns = game.state.getCurrentState().spawns
-  var spawn = spawns[Math.floor(Math.random() * spawns.length)]
-  var x = spawn.x
-  var y = spawn.y
+
   var player = game.add.sprite(x, y, 'player');
   player.swordState = Throw.Ready
   player.animations.add('idle', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 10, true);
@@ -587,6 +585,10 @@ PlayState.prototype.createPlayer = function(team) {
     // Shoot
     // if (game.input.keyboard.justPressed(this.input.shoot)) {
     if (this.input.isShooting()) {
+      // Premature reel-in
+      // if (this.swordState === Throw.Thrown && this.fireCountdown <= 100) {
+      //   this.chain.reelIn()
+      // }
       // Throw sword
       if (this.swordState === Throw.Ready && this.fireCountdown <= 0) {
         var dir = this.getAimDir()
@@ -651,7 +653,7 @@ PlayState.prototype.createPlayer = function(team) {
       } else if (this.swordState === Throw.PullingSword) {
         var angle = game.math.angleBetween(sword.x, sword.y, this.x, this.y)
         this.pullAccum += 40
-        var pullForce = Math.min(650, this.pullAccum)
+        var pullForce = Math.min(550, this.pullAccum)
         sword.body.moveRight(Math.cos(angle) * pullForce)
         sword.body.moveDown(Math.sin(angle) * pullForce)
         sword.body.rotation = angle - Math.PI
@@ -717,7 +719,7 @@ PlayState.prototype.createPlayer = function(team) {
     sword.body.fixedRotation = true
     sword.done = false
     // sword.body.debug = true
-    var SWORD_SPEED = 750
+    var SWORD_SPEED = 650
     sword.update = function () {
       if (!this.hitGround) {
         sword.body.moveRight(SWORD_SPEED * dirX)
