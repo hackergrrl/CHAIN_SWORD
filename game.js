@@ -37,6 +37,7 @@ PlayState.prototype.preload = function() {
 
   game.load.image('chain', 'assets/graphics/_chain_segment.png')
   game.load.image('chain_particle', 'assets/graphics/_chain_particle.png')
+  game.load.image('1x1_particle', 'assets/graphics/_1x1_particle.png')
 
     game.load.image('textbox', 'assets/graphics/_textbox.png');
 
@@ -384,9 +385,20 @@ PlayState.prototype.createPlayer = function(team) {
                 that.chain = null
               }
               game.state.getCurrentState().spawnDeathDust(that)
+              for (var i=0; i < 20; i++) {
+                var seg = game.state.getCurrentState().spawnTinyParticle(that.x, that.y)
+                seg.tint = that.team
+                // seg.alpha = 0.6
+                var rot = Math.random() * Math.PI * 2
+                var force = Math.random() * 800
+                seg.body.velocity.x += Math.cos(rot) * force*0.3 + Math.cos(player.chain.sword.rotation) * force
+                seg.body.velocity.y += Math.sin(rot) * force*0.3 + Math.sin(player.chain.sword.rotation) * force
+              }
               that.visible = false
-              that.body.moveLeft(10000)
-              that.body.moveDown(10000)
+              that.body.x = -10000
+              that.body.y = -10000
+              that.x = -10000
+              that.y = -10000
             })
             game.time.events.add(5000, function() {
               var spawn = spawns[Math.floor(Math.random() * spawns.length)]
@@ -893,6 +905,36 @@ PlayState.prototype.spawnChainSeg = function(x, y) {
   //   game.state.getCurrentState().spawnLandingDust(this.x, this.y + this.height * 0.5 - 4)
   //   this.destroy()
   // }, chain)
+
+  return chain
+}
+
+PlayState.prototype.spawnTinyParticle = function(x, y) {
+  var chain = game.add.sprite(x, y, '1x1_particle')
+  game.physics.p2.enable(chain, false);
+  chain.body.mass = 1
+  chain.scale.set(2, 2)
+  chain.body.setCircle(4)
+  chain.body.setMaterial(game.state.getCurrentState().chainMaterial)
+  chain.body.setCollisionGroup(game.state.getCurrentState().chainCollisionGroup)
+  chain.body.collides([game.state.getCurrentState().groundCollisionGroup])
+  chain.anchor.set(0.5, 0.5)
+  chain.body.allowGravity = true
+
+  chain.lifetime = 3
+  var fading = false
+  chain.update = function () {
+    this.lifetime -= game.time.physicsElapsed
+    if (this.lifetime < 0.5) {
+      if (!fading) {
+        game.add.tween(chain).to({alpha: 0}, 500).start();
+        fading = true
+      }
+    }
+    if (this.lifetime < 0) {
+      this.destroy()
+    }
+  }
 
   return chain
 }
