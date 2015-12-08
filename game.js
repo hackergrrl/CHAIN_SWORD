@@ -34,7 +34,6 @@ PlayState.prototype.preload = function() {
   game.load.spritesheet('player_sword', 'assets/graphics/_sword.png', 17*2, 16*2);
   game.load.image('player_sword_slash', 'assets/graphics/_sword_slash.png')
   game.load.image('sword', 'assets/graphics/_raw_sword.png');
-  game.load.image('aimer', 'assets/graphics/_aimer.png')
 
   game.load.image('chain', 'assets/graphics/_chain_segment.png')
   game.load.image('chain_particle', 'assets/graphics/_chain_particle.png')
@@ -232,13 +231,6 @@ PlayState.prototype.createPlayer = function(team) {
   player.team = team
   player.jumpCountdown = 0
   player.psychicCountdown = 0
-
-  player.aimer = game.add.sprite(0, 0, 'aimer')
-  player.aimer.tint = player.team
-  player.aimer.update = function () {
-    this.x = player.x
-    this.y = player.y
-  }
 
   player.body.onBeginContact.add(function (body, shapeA, shapeB, equation) {
     if (shapeB.material.name == 'ground') {
@@ -561,13 +553,13 @@ PlayState.prototype.createPlayer = function(team) {
       this.animations.play('jump_upward');
     }
 
-    if (this.input.isLeft() && this.body.velocity.x < 6 && !this.isAiming) {
+    if (this.input.isLeft() && this.body.velocity.x < 6) {
       this.body.force.x += -this.walkForce;
       // this.body.moveLeft(100)
       this.scale.x = -1;
       this.sword.scale.x = -1;
     }
-    else if (this.input.isRight() && this.body.velocity.x > -6 && !this.isAiming) {
+    else if (this.input.isRight() && this.body.velocity.x > -6) {
       this.body.force.x += this.walkForce;
       // this.body.moveRight(100)
       this.scale.x = 1;
@@ -580,25 +572,15 @@ PlayState.prototype.createPlayer = function(team) {
       this.looseSword.tint = this.team
     }
 
-    // Throw sword
-    if (!this.input.isShooting() && this.isAiming) {
-      var dir = this.getAimDir()
-      this.shootChain(dir[0], dir[1])
-      this.fireCountdown = this.fireDelay;
-      // game.gun.play();
-    }
-    this.isAiming = false
-    this.aimer.visible = false
-
     // Shoot
     // if (game.input.keyboard.justPressed(this.input.shoot)) {
     if (this.input.isShooting()) {
-      // Aim to fire
+      // Throw sword
       if (this.swordState === Throw.Ready && this.fireCountdown <= 0) {
-        this.isAiming = true
-        this.aimer.visible = true
         var dir = this.getAimDir()
-        this.aimer.rotation = Math.atan2(dir[1], dir[0])
+        this.shootChain(dir[0], dir[1])
+        this.fireCountdown = this.fireDelay;
+        // game.gun.play();
       }
       // Summon sword
       if (this.swordState == Throw.NoSword && (this.psychicCountdown > 0 || (this.psychicCountdown > -3000 && this.wasUsingPsychicLastFrame))) {
@@ -677,19 +659,6 @@ PlayState.prototype.createPlayer = function(team) {
   };
 
   player.getAimDir = function() {
-    // var dirX = this.input.gamepad._axes[0]
-    // var dirY = this.input.gamepad._axes[1]
-    // if (dirX === 0 && dirY === 0) {
-    //   return [this.scale.x, 0]
-    // }
-    // if (dirX > 0) { dirX = 1 }
-    // if (dirX < 0) { dirX = -1 }
-    // if (dirY > 0) { dirY = 1 }
-    // if (dirY < 0) { dirY = -1 }
-    // var len = Math.sqrt(dirX*dirX + dirY*dirY) + 0.01
-    // console.log(dirX, dirY, len)
-    // return [dirX/len, dirY/len]
-
     var dirX = this.scale.x
     var dirY = 0
     // if (game.input.keyboard.isDown(this.input.up)) {
@@ -702,12 +671,12 @@ PlayState.prototype.createPlayer = function(team) {
       dirY = 1
       dirX = 0
     }
-    if (this.input.isLeft()) {
-      dirX = -1
-    }
-    if (this.input.isRight()) {
-      dirX = 1
-    }
+    // if (this.input.isLeft()) {
+    //   dirX = -1
+    // }
+    // if (this.input.isRight()) {
+    //   dirX = 1
+    // }
 
     return [dirX, dirY]
   }
