@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="40" height="35" tilewidth="16" tileheight="16" nextobjectid="1">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="40" height="35" tilewidth="16" tileheight="16" nextobjectid="6">
  <tileset firstgid="1" name="tileset" tilewidth="8" tileheight="8" tilecount="255">
   <image source="../graphics/tileset.png" width="138" height="124"/>
  </tileset>
@@ -84,4 +84,18 @@
 258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258,258
 </data>
  </layer>
+ <objectgroup name="Respawns">
+  <object id="1" x="139" y="192">
+   <ellipse/>
+  </object>
+  <object id="2" x="513" y="170">
+   <ellipse/>
+  </object>
+  <object id="3" x="482" y="474">
+   <ellipse/>
+  </object>
+  <object id="5" x="319" y="352">
+   <ellipse/>
+  </object>
+ </objectgroup>
 </map>

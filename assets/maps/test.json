@@ -21,8 +21,84 @@
          "width":40,
          "x":0,
          "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "height":35,
+         "name":"Respawns",
+         "objects":[
+                {
+                 "ellipse":true,
+                 "height":0,
+                 "id":1,
+                 "name":"",
+                 "properties":
+                    {
+
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":139,
+                 "y":192
+                }, 
+                {
+                 "ellipse":true,
+                 "height":0,
+                 "id":2,
+                 "name":"",
+                 "properties":
+                    {
+
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":513,
+                 "y":170
+                }, 
+                {
+                 "ellipse":true,
+                 "height":0,
+                 "id":3,
+                 "name":"",
+                 "properties":
+                    {
+
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":482,
+                 "y":474
+                }, 
+                {
+                 "ellipse":true,
+                 "height":0,
+                 "id":5,
+                 "name":"",
+                 "properties":
+                    {
+
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":319,
+                 "y":352
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "width":40,
+         "x":0,
+         "y":0
         }],
- "nextobjectid":1,
+ "nextobjectid":6,
  "orientation":"orthogonal",
  "properties":
     {
