@@ -672,7 +672,7 @@ PlayState.prototype.createPlayer = function(team) {
     var sword = game.state.getCurrentState().swords.create(this.x, this.y, 'sword')
     game.physics.p2.enable(sword, false);
     sword.body.mass = 200
-    sword.body.setRectangle(16, 24, 0, 0)
+    sword.body.setRectangle(16, 16, 0, 0)
     sword.body.setCollisionGroup(state.chainCollisionGroup)
     sword.body.collides([state.groundCollisionGroup, state.chainCollisionGroup])
     sword.anchor.set(0, 0.5)
