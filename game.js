@@ -677,27 +677,12 @@ PlayState.prototype.createPlayer = function(team) {
   };
 
   player.getAimDir = function() {
-    // var dirX = this.input.gamepad._axes[0]
-    // var dirY = this.input.gamepad._axes[1]
-    // if (dirX === 0 && dirY === 0) {
-    //   return [this.scale.x, 0]
-    // }
-    // if (dirX > 0) { dirX = 1 }
-    // if (dirX < 0) { dirX = -1 }
-    // if (dirY > 0) { dirY = 1 }
-    // if (dirY < 0) { dirY = -1 }
-    // var len = Math.sqrt(dirX*dirX + dirY*dirY) + 0.01
-    // console.log(dirX, dirY, len)
-    // return [dirX/len, dirY/len]
-
     var dirX = this.scale.x
     var dirY = 0
-    // if (game.input.keyboard.isDown(this.input.up)) {
     if (this.input.isUp()) {
       dirY = -1
       dirX = 0
     }
-    // if (game.input.keyboard.isDown(this.input.down)) {
     if (this.input.isDown()) {
       dirY = 1
       dirX = 0
