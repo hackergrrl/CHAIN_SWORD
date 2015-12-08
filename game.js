@@ -27,7 +27,7 @@ PlayState.prototype.preload = function() {
 
   game.load.spritesheet('dust', 'assets/graphics/_dust.png', 8, 8);
 
-  game.load.tilemap('level1', 'assets/maps/sgunn.json', null, Phaser.Tilemap.TILED_JSON);
+  game.load.tilemap('level1', 'assets/maps/tfall.json', null, Phaser.Tilemap.TILED_JSON);
   game.load.image('tileset', 'assets/graphics/_tileset.png');
 
   game.load.spritesheet('player', 'assets/graphics/_player.png', 10*2, 16*2);
@@ -73,6 +73,17 @@ PlayState.prototype.create = function() {
   this.bg = this.map.createLayer('BG');
 
   var stars = game.add.group();
+
+  this.spawns = []
+  var spawns = this.spawns;
+  if (this.map.objects.Respawns) {
+    this.map.objects.Respawns.forEach(function(spawn, b, c) {
+      spawns.push({
+        x: spawn.x,
+        y: spawn.y
+      })
+    });
+  }
 
   this.groundMaterial = game.physics.p2.createMaterial('ground');
   this.playerMaterial = game.physics.p2.createMaterial('player');
@@ -139,7 +150,7 @@ PlayState.prototype.create = function() {
   worldBody.body.static = true
     worldBody.body.debug = true
 
-    players[0] = this.createPlayer(20*4, 136*2, 0xFF0000)
+    players[0] = this.createPlayer(0xFF0000)
     players[0].input = {
          gamepad: game.input.gamepad.pad1,
          up: Phaser.Keyboard.UP,
@@ -151,7 +162,7 @@ PlayState.prototype.create = function() {
     };
     injectInput(players[0].input)
 
-    players[1] = this.createPlayer(45*4, 86*2, 0x00FF00)
+    players[1] = this.createPlayer(0x00FF00)
     players[1].input = {
          gamepad: game.input.gamepad.pad2,
          up: Phaser.Keyboard.W,
@@ -164,7 +175,7 @@ PlayState.prototype.create = function() {
     injectInput(players[1].input)
 
     if (game.input.gamepad.pad3.connected) {
-      players[2] = this.createPlayer(110*4, 136*2, 0xFF00FF)
+      players[2] = this.createPlayer(0xFF00FF)
       players[2].input = {
         gamepad: game.input.gamepad.pad3,
         // up: Phaser.Keyboard.UP,
@@ -178,7 +189,7 @@ PlayState.prototype.create = function() {
     }
 
     if (game.input.gamepad.pad4.connected) {
-      players[3] = this.createPlayer(130*4, 86*2, 0xFFFF00)
+      players[3] = this.createPlayer(0xFFFF00)
       players[3].input = {
         gamepad: game.input.gamepad.pad4,
         // up: Phaser.Keyboard.UP,
@@ -192,10 +203,12 @@ PlayState.prototype.create = function() {
     }
 }
 
-PlayState.prototype.createPlayer = function(x, y, team) {
+PlayState.prototype.createPlayer = function(team) {
+  var spawns = game.state.getCurrentState().spawns
+  var spawn = spawns[Math.floor(Math.random() * spawns.length)]
+  var x = spawn.x
+  var y = spawn.y
   var player = game.add.sprite(x, y, 'player');
-  player.respawnX = x
-  player.respawnY = y
   player.swordState = Throw.Ready
   player.animations.add('idle', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 10, true);
   player.animations.add('jump_upward', [2], 10, false);
@@ -211,8 +224,8 @@ PlayState.prototype.createPlayer = function(x, y, team) {
   // player.body.debug = true
   player.body.mass = 10
   player.body.collideWorldBounds = true;
-  player.walkForce = 60000;
-  player.jumpForce = 460;
+  player.walkForce = 40000;
+  player.jumpForce = 360;
   player.fireDelay = 250;
   player.fireCountdown = 0;
   player.team = team
@@ -375,8 +388,9 @@ PlayState.prototype.createPlayer = function(x, y, team) {
               that.body.moveDown(10000)
             })
             game.time.events.add(5000, function() {
-              this.body.x = this.respawnX
-              this.body.y = this.respawnY
+              var spawn = spawns[Math.floor(Math.random() * spawns.length)]
+              this.body.x = spawn.x
+              this.body.y = spawn.y
               this.fireCountdown = 500
               this.swordState = Throw.Ready
               this.body.velocity.x = 0
