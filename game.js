@@ -458,7 +458,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
             if (player.chain) {
               var pos = [start[0], start[1]]
               var done = false
-              for (var i=0; i < steps && !done; i++) {
+              for (var j=0; j < steps && !done; j++) {
                 var dist = game.math.distance(pos[0], pos[1], player.chain.sword.x, player.chain.sword.y)
                 if (dist <= 10) {
                   var that = this
