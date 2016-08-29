@@ -832,6 +832,7 @@ PlayState.prototype.spawnDust = function(x, y) {
   dust.body.setCollisionGroup(this.dustCollisionGroup)
   dust.body.kinematic = true
   dust.body.allowGravity = false
+  setTimeout(function() { dust.destroy() }, 1000)
   return dust
 }
 
