@@ -151,7 +151,10 @@ PlayState.prototype.create = function() {
   worldBody.body.static = true
   worldBody.body.debug = true
 
-  players[0] = this.createPlayer(spawns[0].x, spawns[0].y, 0xFF0000)
+  var that = this
+  setTimeout(function() {
+
+  players[0] = that.createPlayer(spawns[0].x, spawns[0].y, 0xFF0000)
   players[0].input = {
         gamepad: game.input.gamepad.pad1,
         up: Phaser.Keyboard.UP,
@@ -163,7 +166,7 @@ PlayState.prototype.create = function() {
   };
   injectInput(players[0].input)
 
-  players[1] = this.createPlayer(spawns[1].x, spawns[1].y, 0x00FF00)
+  players[1] = that.createPlayer(spawns[1].x, spawns[1].y, 0x00FF00)
   players[1].input = {
         gamepad: game.input.gamepad.pad2,
         up: Phaser.Keyboard.W,
@@ -175,8 +178,8 @@ PlayState.prototype.create = function() {
   };
   injectInput(players[1].input)
 
-  if (game.input.gamepad.pad3.connected) {
-    players[2] = this.createPlayer(spawns[2].x, spawns[2].y, 0xFF00FF)
+  if (true || game.input.gamepad.pad3.connected) {
+    players[2] = that.createPlayer(spawns[2].x, spawns[2].y, 0xFF00FF)
     players[2].input = {
       gamepad: game.input.gamepad.pad3,
       // up: Phaser.Keyboard.UP,
@@ -184,13 +187,13 @@ PlayState.prototype.create = function() {
       // left: Phaser.Keyboard.LEFT,
       // right: Phaser.Keyboard.RIGHT,
       // jump: Phaser.Keyboard.Z,
-      // shoot: Phaser.Keyboard.X
+      shoot: Phaser.Keyboard.T
     };
     injectInput(players[2].input)
   }
 
   if (game.input.gamepad.pad4.connected) {
-    players[3] = this.createPlayer(spawns[3].x, spawns[3].y, 0xFFFF00)
+    players[3] = that.createPlayer(spawns[3].x, spawns[3].y, 0xFFFF00)
     players[3].input = {
       gamepad: game.input.gamepad.pad4,
       // up: Phaser.Keyboard.UP,
@@ -198,10 +201,11 @@ PlayState.prototype.create = function() {
       // left: Phaser.Keyboard.LEFT,
       // right: Phaser.Keyboard.RIGHT,
       // jump: Phaser.Keyboard.Z,
-      // shoot: Phaser.Keyboard.X
+      // shoot: Phaser.Keyboard.T
     };
     injectInput(players[3].input)
   }
+  }, 1000)
 }
 
 PlayState.prototype.createPlayer = function(x, y, team) {
