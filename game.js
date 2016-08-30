@@ -3,6 +3,9 @@ var chains
 
 var worldBody
 
+var hud
+var scores = []
+
 var players = []
 
 var Throw = {
@@ -14,6 +17,11 @@ var Throw = {
   Slashing: 6,
   NoSword: 7,
   Dead: 8
+}
+
+function setScore (plr, value) {
+  scores[plr].sprite.text = 'P' + plr + '  ' + value
+  scores[plr].value = value
 }
 
 function PlayState(game) {
@@ -146,6 +154,32 @@ PlayState.prototype.create = function() {
 
   chains = game.add.group();
 
+  hud = game.add.group()
+
+	var style = { font: "25px Arial", fill: "#ff0000", align: "center" };
+  var text = game.add.text(game.world.centerX - 250, game.world.height-10, "P1:  3", style);
+  text.anchor.set(0.5);
+  text.visible = false
+  scores[0] = { value: 0, sprite: text }
+
+	var style = { font: "25px Arial", fill: "#00ff00", align: "center" };
+  var text = game.add.text(game.world.centerX - 100, game.world.height-10, "P2:  2", style);
+  text.anchor.set(0.5);
+  text.visible = false
+  scores[1] = { value: 0, sprite: text }
+
+	var style = { font: "25px Arial", fill: "#ff00ff", align: "center" };
+  var text = game.add.text(game.world.centerX + 100, game.world.height-10, "P3:  0", style);
+  text.anchor.set(0.5);
+  text.visible = false
+  scores[2] = { value: 0, sprite: text }
+
+	var style = { font: "25px Arial", fill: "#ffff00", align: "center" };
+  var text = game.add.text(game.world.centerX + 250, game.world.height-10, "P4:  6", style);
+  text.anchor.set(0.5);
+  text.visible = false
+  scores[3] = { value: 0, sprite: text }
+
   worldBody = game.add.sprite(0, 0, 'star_small')
   game.physics.p2.enable(worldBody);
   worldBody.body.static = true
@@ -153,58 +187,65 @@ PlayState.prototype.create = function() {
 
   var that = this
   setTimeout(function() {
-
-  players[0] = that.createPlayer(spawns[0].x, spawns[0].y, 0xFF0000)
-  players[0].input = {
-        gamepad: game.input.gamepad.pad1,
-        up: Phaser.Keyboard.UP,
-        down: Phaser.Keyboard.DOWN,
-        left: Phaser.Keyboard.LEFT,
-        right: Phaser.Keyboard.RIGHT,
-        jump: Phaser.Keyboard.Z,
-        shoot: Phaser.Keyboard.X
-  };
-  injectInput(players[0].input)
-
-  players[1] = that.createPlayer(spawns[1].x, spawns[1].y, 0x00FF00)
-  players[1].input = {
-        gamepad: game.input.gamepad.pad2,
-        up: Phaser.Keyboard.W,
-        down: Phaser.Keyboard.S,
-        left: Phaser.Keyboard.A,
-        right: Phaser.Keyboard.D,
-        jump: Phaser.Keyboard.O,
-        shoot: Phaser.Keyboard.P
-  };
-  injectInput(players[1].input)
-
-  if (true || game.input.gamepad.pad3.connected) {
-    players[2] = that.createPlayer(spawns[2].x, spawns[2].y, 0xFF00FF)
-    players[2].input = {
-      gamepad: game.input.gamepad.pad3,
-      // up: Phaser.Keyboard.UP,
-      // down: Phaser.Keyboard.DOWN,
-      // left: Phaser.Keyboard.LEFT,
-      // right: Phaser.Keyboard.RIGHT,
-      // jump: Phaser.Keyboard.Z,
-      shoot: Phaser.Keyboard.T
+    players[0] = that.createPlayer(spawns[0].x, spawns[0].y, 0xFF0000)
+    players[0].input = {
+          gamepad: game.input.gamepad.pad1,
+          up: Phaser.Keyboard.UP,
+          down: Phaser.Keyboard.DOWN,
+          left: Phaser.Keyboard.LEFT,
+          right: Phaser.Keyboard.RIGHT,
+          jump: Phaser.Keyboard.Z,
+          shoot: Phaser.Keyboard.X
     };
-    injectInput(players[2].input)
-  }
+    injectInput(players[0].input)
+    scores[0].sprite.visible = true
+    setScore(0, 0)
 
-  if (game.input.gamepad.pad4.connected) {
-    players[3] = that.createPlayer(spawns[3].x, spawns[3].y, 0xFFFF00)
-    players[3].input = {
-      gamepad: game.input.gamepad.pad4,
-      // up: Phaser.Keyboard.UP,
-      // down: Phaser.Keyboard.DOWN,
-      // left: Phaser.Keyboard.LEFT,
-      // right: Phaser.Keyboard.RIGHT,
-      // jump: Phaser.Keyboard.Z,
-      // shoot: Phaser.Keyboard.T
+    players[1] = that.createPlayer(spawns[1].x, spawns[1].y, 0x00FF00)
+    players[1].input = {
+          gamepad: game.input.gamepad.pad2,
+          up: Phaser.Keyboard.W,
+          down: Phaser.Keyboard.S,
+          left: Phaser.Keyboard.A,
+          right: Phaser.Keyboard.D,
+          jump: Phaser.Keyboard.O,
+          shoot: Phaser.Keyboard.P
     };
-    injectInput(players[3].input)
-  }
+    injectInput(players[1].input)
+    scores[1].sprite.visible = true
+    setScore(1, 0)
+
+    if (true || game.input.gamepad.pad3.connected) {
+      players[2] = that.createPlayer(spawns[2].x, spawns[2].y, 0xFF00FF)
+      players[2].input = {
+        gamepad: game.input.gamepad.pad3,
+        // up: Phaser.Keyboard.UP,
+        // down: Phaser.Keyboard.DOWN,
+        // left: Phaser.Keyboard.LEFT,
+        // right: Phaser.Keyboard.RIGHT,
+        // jump: Phaser.Keyboard.Z,
+        shoot: Phaser.Keyboard.T
+      };
+      injectInput(players[2].input)
+      scores[2].sprite.visible = true
+      setScore(2, 0)
+    }
+
+    if (game.input.gamepad.pad4.connected) {
+      players[3] = that.createPlayer(spawns[3].x, spawns[3].y, 0xFFFF00)
+      players[3].input = {
+        gamepad: game.input.gamepad.pad4,
+        // up: Phaser.Keyboard.UP,
+        // down: Phaser.Keyboard.DOWN,
+        // left: Phaser.Keyboard.LEFT,
+        // right: Phaser.Keyboard.RIGHT,
+        // jump: Phaser.Keyboard.Z,
+        // shoot: Phaser.Keyboard.T
+      };
+      injectInput(players[3].input)
+      scores[3].sprite.visible = true
+      setScore(3, 0)
+    }
   }, 1000)
 }
 
@@ -357,6 +398,8 @@ PlayState.prototype.createPlayer = function(x, y, team) {
   player.update = function() {
     this.sword.visible = (this.swordState === Throw.Ready && this.visible)
 
+    if (this.wip) return
+
     // check for other swords hitting us
     for (var i=0; i < players.length; i++) {
       if (players[i] !== this) {
@@ -366,8 +409,13 @@ PlayState.prototype.createPlayer = function(x, y, team) {
           if (dist <= 16 && this.visible) {
             var that = this
             this.swordState = Throw.Dead
-            gameFreeze(0.15, function() {
+            that.wip = true
+            gameFreeze(0.1, function() {
               game.paused = false
+              that.wip = false
+
+              setScore(players.indexOf(player), scores[players.indexOf(player)].value + 1)
+
               if (that.looseSword) {
                 var sword = that.looseSword
                 that.looseSword = null
