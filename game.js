@@ -94,6 +94,7 @@ function playerJoin (idx) {
   players[idx] = this.createPlayer(this.spawns[idx].x, this.spawns[idx].y, tints.numbers[idx])
   players[idx].spawnDelay = 30
   players[idx].input = inputs[idx]
+  game.state.getCurrentState().spawnDeathDust(players[idx])
   scores[idx].join()
   // if (game.input.gamepad.pad4.connected) {
 }
@@ -495,11 +496,14 @@ PlayState.prototype.createPlayer = function(x, y, team) {
               var spawn = spawns[Math.floor(Math.random() * spawns.length)]
               this.body.x = spawn.x
               this.body.y = spawn.y
+              this.x = spawn.x
+              this.y = spawn.y
               this.fireCountdown = 500
               this.swordState = Throw.Ready
               this.body.velocity.x = 0
               this.body.velocity.y = 0
               this.visible = true
+              game.state.getCurrentState().spawnDeathDust(this)
             }, this);
             break
           }
@@ -969,11 +973,20 @@ PlayState.prototype.spawnOmniDust = function(x, y) {
 }
 
 PlayState.prototype.spawnDeathDust = function(player) {
-  for (var i=0; i < 10; i++) {
-    var dust = game.state.getCurrentState().spawnDust(player.x, player.y)
-    var ang = Math.random() * Math.PI * 2
-    dust.body.velocity.x = Math.cos(ang) * game.rnd.between(25, 75)
-    dust.body.velocity.y = Math.sin(ang) * game.rnd.between(25, 75)
+  for (var i=0; i < 20; i++) {
+    var dust = game.state.getCurrentState().spawnDust(
+      player.x + game.rnd.between(-5, 5),
+      player.y + game.rnd.between(0, 20))
+    dust.body.mass = 1
+    dust.body.velocity.x = game.rnd.between(-200, 200)
+    dust.body.velocity.y = -50
+    // dust.body.damping = 0.999
+    dust.update = function () {
+      // console.log('pre', this.body.velocity.x)
+      // this.body.velocity.x *= 20
+      // console.log('post', this.body.velocity.x)
+      // dust.body.velocity.y *= 1.2
+    }
     dust.tint = player.team
   }
 }
