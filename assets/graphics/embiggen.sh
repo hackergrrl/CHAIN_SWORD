@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 for f in $(ls -1 *.png | grep -v ^_); do
   echo "${f} to _${f}"
