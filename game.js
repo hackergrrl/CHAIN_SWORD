@@ -19,9 +19,83 @@ var Throw = {
   Dead: 8
 }
 
-function setScore (plr, value) {
-  scores[plr].sprite.text = 'P' + plr + '  ' + value
-  scores[plr].value = value
+var tints = {
+  strings: [
+    "#ff0000",
+    "#00ff00",
+    "#ff00ff",
+    "#ffff00"
+  ],
+  numbers: [
+    0xff0000,
+    0x00ff00,
+    0xff00ff,
+    0xffff00
+  ]
+}
+
+function createPlayerScore (idx) {
+	var style = { font: "25px Arial", fill: tints.strings[idx], align: "center" };
+  var text = game.add.text(game.world.centerX - 250 + idx * 150, game.world.height-10, "P1:  3", style);
+  text.anchor.set(0.5);
+  text.visible = false
+
+  var bubbleBg = game.add.sprite(text.x, text.y - 7, 'bubble_bg')
+  bubbleBg.anchor.set(0.5, 0.5)
+    // to: function (properties, duration, ease, autoStart, delay, repeat, yoyo) {
+  game.add.tween(bubbleBg).to({y: bubbleBg.y - 5}, 1500, Phaser.Easing.Quadratic.InOut, true, 0, 10000, true).start();
+
+  var bubbleFg = game.add.sprite(text.x, text.y - 7, 'bubble_fg')
+  bubbleFg.anchor.set(0.5, 0.5)
+  bubbleFg.tint = tints.numbers[idx]
+    // to: function (properties, duration, ease, autoStart, delay, repeat, yoyo) {
+  game.add.tween(bubbleFg).to({y: bubbleFg.y - 5}, 1500, Phaser.Easing.Quadratic.InOut, true, 0, 10000, true).start();
+
+  var bubblePop = game.add.sprite(text.x, text.y - 7, 'bubble_pop')
+  bubblePop.anchor.set(0.5, 0.5)
+  bubblePop.visible = false
+
+  var score = { value: 0, sprite: text, bubbleBg: bubbleBg, bubbleFg: bubbleFg }
+
+  score.set = function (value) {
+    this.sprite.text = 'P' + idx + '  ' + value
+    this.value = value
+  }
+
+  score.inc = function () {
+    this.set(this.value + 1)
+  }
+
+  score.join = function () {
+    this.bubbleBg.visible = false
+    this.bubbleFg.visible = false
+    bubblePop.visible = true
+    setTimeout(function () {
+      bubblePop.visible = false
+      text.visible = true
+      score.set(0)
+    }, 200)
+  }
+
+  score.leave = function () {
+    bubblePop.visible = false
+    this.sprite.visible = false
+    this.bubbleBg.visible = true
+    this.bubbleFg.visible = true
+    this.set(0)
+  }
+
+  return score
+}
+
+var inputs
+
+function playerJoin (idx) {
+  players[idx] = this.createPlayer(this.spawns[idx].x, this.spawns[idx].y, tints.numbers[idx])
+  players[idx].spawnDelay = 30
+  players[idx].input = inputs[idx]
+  scores[idx].join()
+  // if (game.input.gamepad.pad4.connected) {
 }
 
 function PlayState(game) {
@@ -47,7 +121,11 @@ PlayState.prototype.preload = function() {
   game.load.image('chain_particle', 'assets/graphics/_chain_particle.png')
   game.load.image('1x1_particle', 'assets/graphics/_1x1_particle.png')
 
-    game.load.image('textbox', 'assets/graphics/_textbox.png');
+  game.load.image('textbox', 'assets/graphics/_textbox.png');
+
+  game.load.image('bubble_bg', 'assets/graphics/_bubble.png');
+  game.load.image('bubble_fg', 'assets/graphics/_bubble_letter.png');
+  game.load.image('bubble_pop', 'assets/graphics/_bubble_pop.png');
 
   game.load.audio('gun', 'assets/sounds/gun.wav');
   game.load.audio('jump', 'assets/sounds/jump.wav');
@@ -61,6 +139,49 @@ PlayState.prototype.create = function() {
   console.log('create');
 
   game.input.gamepad.start();
+
+  inputs = [
+    {
+      gamepad: game.input.gamepad.pad1,
+      up: Phaser.Keyboard.UP,
+      down: Phaser.Keyboard.DOWN,
+      left: Phaser.Keyboard.LEFT,
+      right: Phaser.Keyboard.RIGHT,
+      jump: Phaser.Keyboard.Z,
+      shoot: Phaser.Keyboard.X
+    },
+    {
+      gamepad: game.input.gamepad.pad2,
+      up: Phaser.Keyboard.W,
+      down: Phaser.Keyboard.S,
+      left: Phaser.Keyboard.A,
+      right: Phaser.Keyboard.D,
+      jump: Phaser.Keyboard.O,
+      shoot: Phaser.Keyboard.P
+    },
+    {
+      gamepad: game.input.gamepad.pad3,
+      // up: Phaser.Keyboard.UP,
+      // down: Phaser.Keyboard.DOWN,
+      // left: Phaser.Keyboard.LEFT,
+      // right: Phaser.Keyboard.RIGHT,
+      // jump: Phaser.Keyboard.Z,
+      shoot: Phaser.Keyboard.T
+    },
+    {
+      gamepad: game.input.gamepad.pad4,
+      // up: Phaser.Keyboard.UP,
+      // down: Phaser.Keyboard.DOWN,
+      // left: Phaser.Keyboard.LEFT,
+      // right: Phaser.Keyboard.RIGHT,
+      // jump: Phaser.Keyboard.Z,
+      // shoot: Phaser.Keyboard.T
+    }
+  ]
+  injectInput(inputs[0])
+  injectInput(inputs[1])
+  injectInput(inputs[2])
+  injectInput(inputs[3])
 
   game.physics.startSystem(Phaser.Physics.P2JS);
   game.physics.p2.gravity.y = 900;
@@ -155,98 +276,15 @@ PlayState.prototype.create = function() {
   chains = game.add.group();
 
   hud = game.add.group()
-
-	var style = { font: "25px Arial", fill: "#ff0000", align: "center" };
-  var text = game.add.text(game.world.centerX - 250, game.world.height-10, "P1:  3", style);
-  text.anchor.set(0.5);
-  text.visible = false
-  scores[0] = { value: 0, sprite: text }
-
-	var style = { font: "25px Arial", fill: "#00ff00", align: "center" };
-  var text = game.add.text(game.world.centerX - 100, game.world.height-10, "P2:  2", style);
-  text.anchor.set(0.5);
-  text.visible = false
-  scores[1] = { value: 0, sprite: text }
-
-	var style = { font: "25px Arial", fill: "#ff00ff", align: "center" };
-  var text = game.add.text(game.world.centerX + 100, game.world.height-10, "P3:  0", style);
-  text.anchor.set(0.5);
-  text.visible = false
-  scores[2] = { value: 0, sprite: text }
-
-	var style = { font: "25px Arial", fill: "#ffff00", align: "center" };
-  var text = game.add.text(game.world.centerX + 250, game.world.height-10, "P4:  6", style);
-  text.anchor.set(0.5);
-  text.visible = false
-  scores[3] = { value: 0, sprite: text }
+  scores[0] = createPlayerScore(0)
+  scores[1] = createPlayerScore(1)
+  scores[2] = createPlayerScore(2)
+  scores[3] = createPlayerScore(3)
 
   worldBody = game.add.sprite(0, 0, 'star_small')
   game.physics.p2.enable(worldBody);
   worldBody.body.static = true
   worldBody.body.debug = true
-
-  var that = this
-  setTimeout(function() {
-    players[0] = that.createPlayer(spawns[0].x, spawns[0].y, 0xFF0000)
-    players[0].input = {
-          gamepad: game.input.gamepad.pad1,
-          up: Phaser.Keyboard.UP,
-          down: Phaser.Keyboard.DOWN,
-          left: Phaser.Keyboard.LEFT,
-          right: Phaser.Keyboard.RIGHT,
-          jump: Phaser.Keyboard.Z,
-          shoot: Phaser.Keyboard.X
-    };
-    injectInput(players[0].input)
-    scores[0].sprite.visible = true
-    setScore(0, 0)
-
-    players[1] = that.createPlayer(spawns[1].x, spawns[1].y, 0x00FF00)
-    players[1].input = {
-          gamepad: game.input.gamepad.pad2,
-          up: Phaser.Keyboard.W,
-          down: Phaser.Keyboard.S,
-          left: Phaser.Keyboard.A,
-          right: Phaser.Keyboard.D,
-          jump: Phaser.Keyboard.O,
-          shoot: Phaser.Keyboard.P
-    };
-    injectInput(players[1].input)
-    scores[1].sprite.visible = true
-    setScore(1, 0)
-
-    if (true || game.input.gamepad.pad3.connected) {
-      players[2] = that.createPlayer(spawns[2].x, spawns[2].y, 0xFF00FF)
-      players[2].input = {
-        gamepad: game.input.gamepad.pad3,
-        // up: Phaser.Keyboard.UP,
-        // down: Phaser.Keyboard.DOWN,
-        // left: Phaser.Keyboard.LEFT,
-        // right: Phaser.Keyboard.RIGHT,
-        // jump: Phaser.Keyboard.Z,
-        shoot: Phaser.Keyboard.T
-      };
-      injectInput(players[2].input)
-      scores[2].sprite.visible = true
-      setScore(2, 0)
-    }
-
-    if (game.input.gamepad.pad4.connected) {
-      players[3] = that.createPlayer(spawns[3].x, spawns[3].y, 0xFFFF00)
-      players[3].input = {
-        gamepad: game.input.gamepad.pad4,
-        // up: Phaser.Keyboard.UP,
-        // down: Phaser.Keyboard.DOWN,
-        // left: Phaser.Keyboard.LEFT,
-        // right: Phaser.Keyboard.RIGHT,
-        // jump: Phaser.Keyboard.Z,
-        // shoot: Phaser.Keyboard.T
-      };
-      injectInput(players[3].input)
-      scores[3].sprite.visible = true
-      setScore(3, 0)
-    }
-  }, 1000)
 }
 
 PlayState.prototype.createPlayer = function(x, y, team) {
@@ -398,10 +436,13 @@ PlayState.prototype.createPlayer = function(x, y, team) {
   player.update = function() {
     this.sword.visible = (this.swordState === Throw.Ready && this.visible)
 
+    if (this.spawnDelay) this.spawnDelay--
+
     if (this.wip) return
 
     // check for other swords hitting us
     for (var i=0; i < players.length; i++) {
+      if (!players[i]) continue
       if (players[i] !== this) {
         var player = players[i]
         if (player.chain) {
@@ -414,7 +455,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
               game.paused = false
               that.wip = false
 
-              setScore(players.indexOf(player), scores[players.indexOf(player)].value + 1)
+              scores[players.indexOf(player)].inc()
 
               if (that.looseSword) {
                 var sword = that.looseSword
@@ -469,6 +510,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     // check for sword vs sword collisions
     if (this.chain) {
       for (var i=0; i < players.length; i++) {
+        if (!players[i]) continue
         if (players[i] !== this && players[i].chain && players[i].chain.sword) {
           var player = players[i]
           var dist = game.math.distance(player.chain.sword.x, player.chain.sword.y, this.chain.sword.x, this.chain.sword.y)
@@ -501,6 +543,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
         step[1] = (step[1] / len) * STEP_SIZE
         var steps = len / STEP_SIZE
         for (var i=0; i < players.length; i++) {
+          if (!players[i]) continue
           if (players[i] !== this && players[i].chain && !this.chain.hit) {
             var player = players[i]
             if (player.chain) {
@@ -640,7 +683,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
 
     // Shoot
     // if (game.input.keyboard.justPressed(this.input.shoot)) {
-    if (this.input.isShooting()) {
+    if (!this.spawnDelay && this.input.isShooting()) {
       // Premature reel-in
       // if (this.swordState === Throw.Thrown && this.fireCountdown <= 100) {
       //   this.chain.reelIn()
@@ -678,7 +721,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     }
 
     // if (game.input.keyboard.isDown(this.input.shoot)) {
-    if (this.input.isShooting()) {
+    if (!this.spawnDelay && this.input.isShooting()) {
       if (this.chain && this.swordState === Throw.Locked && this.fireCountdown <= 0) {
         this.chain.reelIn()
       }
@@ -851,6 +894,12 @@ PlayState.prototype.update = function() {
 
   for (var i in players) {
     players[i].update()
+  }
+
+  for (var i=0; i < inputs.length; i++) {
+    if (inputs[i].isShooting() && !players[i]) {
+      playerJoin.call(this, i)
+    }
   }
 
   // Slash
