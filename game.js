@@ -179,10 +179,10 @@ PlayState.prototype.create = function() {
       // shoot: Phaser.Keyboard.T
     }
   ]
-  injectInput(inputs[0])
-  injectInput(inputs[1])
-  injectInput(inputs[2])
-  injectInput(inputs[3])
+  injectInput(inputs[0], false)
+  injectInput(inputs[1], false)
+  injectInput(inputs[2], false)
+  injectInput(inputs[3], false)
 
   game.physics.startSystem(Phaser.Physics.P2JS);
   game.physics.p2.gravity.y = 900;
@@ -435,6 +435,8 @@ PlayState.prototype.createPlayer = function(x, y, team) {
   };
 
   player.update = function() {
+    if (game.paused) return
+
     this.sword.visible = (this.swordState === Throw.Ready && this.visible)
 
     if (this.spawnDelay) this.spawnDelay--
@@ -700,7 +702,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
         // game.gun.play();
       }
       // Summon sword
-      if (this.swordState == Throw.NoSword && (this.psychicCountdown > 0 || (this.psychicCountdown > -3000 && this.wasUsingPsychicLastFrame))) {
+      if (this.swordState == Throw.NoSword && this.looseSword && (this.psychicCountdown > 0 || (this.psychicCountdown > -3000 && this.wasUsingPsychicLastFrame))) {
         var angle = game.math.angleBetween(this.x, this.y, this.looseSword.x, this.looseSword.y)
         var force = [Math.cos(angle) * -100, Math.sin(angle) * -100]
         // this.looseSword.body.force.x += force[0]
@@ -983,7 +985,7 @@ PlayState.prototype.spawnDeathDust = function(player) {
     // dust.body.damping = 0.999
     dust.update = function () {
       // console.log('pre', this.body.velocity.x)
-      // this.body.velocity.x *= 20
+      this.body.velocity.x *= 0.9
       // console.log('post', this.body.velocity.x)
       // dust.body.velocity.y *= 1.2
     }
@@ -1111,27 +1113,33 @@ Phaser.TileSprite.prototype.kill = function() {
 
 var DEAD_ZONE = 0.5
 
-function injectInput(input) {
+function injectInput(input, generate) {
   input.isJumping = function() {
+    if (generate) { return Math.random() < 0.1 }
     return game.input.keyboard.isDown(this.jump)
         || (this.gamepad && this.gamepad.connected
         && this.gamepad._buttons[0].isDown);
   };
   input.isShooting = function() {
+    if (generate) { return Math.random() < 0.01 }
     return game.input.keyboard.isDown(this.shoot)
         || (this.gamepad && this.gamepad.connected
         && this.gamepad._buttons[1].isDown);
   };
   input.isLeft = function() {
+    if (generate) { return Math.random() < 0.1 }
     return game.input.keyboard.isDown(this.left) || (this.gamepad && this.gamepad.connected && this.gamepad._axes[0] < -DEAD_ZONE)
   }
   input.isRight = function() {
+    if (generate) { return Math.random() < 0.1 }
     return game.input.keyboard.isDown(this.right) || (this.gamepad && this.gamepad.connected && this.gamepad._axes[0] > DEAD_ZONE)
   }
   input.isUp = function() {
+    if (generate) { return Math.random() < 0.1 }
     return game.input.keyboard.isDown(this.up) || (this.gamepad && this.gamepad.connected && this.gamepad._axes[1] < -DEAD_ZONE)
   }
   input.isDown = function() {
+    if (generate) { return Math.random() < 0.1 }
     return game.input.keyboard.isDown(this.down) || (this.gamepad && this.gamepad.connected && this.gamepad._axes[1] > DEAD_ZONE)
   }
 }
