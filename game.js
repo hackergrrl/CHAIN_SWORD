@@ -3,7 +3,6 @@ var chains
 
 var worldBody
 
-var hud
 var scores = []
 
 var players = []
@@ -64,6 +63,11 @@ function createPlayerScore (idx) {
 
   score.inc = function () {
     this.set(this.value + 1)
+
+    if (this.value === 1) {
+      unhookAllInput()
+      runWinnerSequence(idx)
+    }
   }
 
   score.join = function () {
@@ -276,11 +280,12 @@ PlayState.prototype.create = function() {
 
   chains = game.add.group();
 
-  hud = game.add.group()
   scores[0] = createPlayerScore(0)
   scores[1] = createPlayerScore(1)
   scores[2] = createPlayerScore(2)
   scores[3] = createPlayerScore(3)
+
+  players = []
 
   worldBody = game.add.sprite(0, 0, 'star_small')
   game.physics.p2.enable(worldBody);
@@ -413,7 +418,6 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       if (lifetime <= 0) {
         player.slashSprite = null
         player.swordState = Throw.Ready
-        console.log('foo')
         this.destroy()
       }
     }
@@ -857,7 +861,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       }
     }, sword)
 
-    var chain = this.game.add.tileSprite(player.x, player.y, 128, 9, 'chain');
+    var chain = this.game.add.tileSprite(player.x, player.y, 8, 9, 'chain');
     chain.anchor.set(0, 0.5)
     chain.tint = player.team
 
@@ -1112,6 +1116,59 @@ Phaser.TileSprite.prototype.kill = function() {
 };
 
 var DEAD_ZONE = 0.5
+
+function range (start, end) {
+  if (end === undefined) { end = start; start = 0 }
+  var elems = []
+  for (var i=start; i <= end; i++) {
+    elems.push(i)
+  }
+  return elems
+}
+
+function unhookAllInput () {
+  range(4).forEach(function (i) { unhookInput(inputs[i]) })
+}
+
+function runWinnerSequence (winnerIdx) {
+	var style = { font: "85px Arial Bold", fill: tints.strings[winnerIdx], align: "center" };
+  var text = game.add.text(game.world.centerX, game.world.centerY, 'P'+(winnerIdx+1)+' WINS!', style);
+  text.anchor.set(0.5, 0.5);
+    // to: function (properties, duration, ease, autoStart, delay, repeat, yoyo) {
+  game.add.tween(text.scale)
+    .from({x: 0, y: 0})
+    .to({x: 1, y: 1}, 1500, Phaser.Easing.Bounce.InOut)
+    .start();
+
+	var style = { font: "75px Arial Bold", fill: '#ffffff', align: "center" };
+  var val = 10
+  var countdown = game.add.text(game.world.centerX, game.world.centerY + 200, '', style);
+  countdown.anchor.set(0.5, 0.5);
+  var ix = setInterval(function () {
+    val--
+    countdown.text = val
+    if (val === 0) {
+      clearInterval(ix)
+      restartWorld(0)
+    }
+  }, 800)
+}
+
+function restartWorld (levelIdx) {
+  game.state.restart(true)
+  // game.state.add('play', PlayState);
+  // game.state.start('play');
+}
+
+function unhookInput (input) {
+  if (!input) return
+  input.isJumping = function () { return false }
+  input.isShooting = function () { return false }
+  input.isLeft = function () { return false }
+  input.isRight = function () { return false }
+  input.isUp = function () { return false }
+  input.isDown = function () { return false }
+}
 
 function injectInput(input, generate) {
   input.isJumping = function() {

@@ -31502,7 +31502,7 @@ Phaser.Sprite.prototype.destroy = function(destroyChildren) {
         }
     }
 
-    if (this.input)
+    if (this.input && this.input.destroy)
     {
         this.input.destroy();
     }
