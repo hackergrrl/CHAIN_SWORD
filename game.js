@@ -698,7 +698,6 @@ PlayState.prototype.createPlayer = function(x, y, team) {
         var dir = this.getAimDir()
         this.shootChain(dir[0], dir[1])
         this.fireCountdown = this.fireDelay;
-        // game.gun.play();
       }
       // Summon sword
       if (this.swordState == Throw.NoSword && this.looseSword && (this.psychicCountdown > 0 || (this.psychicCountdown > -3000 && this.wasUsingPsychicLastFrame))) {
@@ -815,6 +814,8 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     game.sfx.shoot.play()
     game.sfx.chain.play()
     game.state.getCurrentState().spawnOmniDust(this.x, this.y)
+
+    this.body.velocity.x -= dirX * 100
 
     // sword
     var sword = game.state.getCurrentState().swords.create(this.x, this.y, 'sword')
@@ -1160,6 +1161,7 @@ function murderPlayer (victim, killer) {
   if (!victim.visible) return
 
   game.sfx.death.play()
+  game.sfx.chain.stop() // just in case
 
   if (victim.looseSword) {
     var sword = victim.looseSword
