@@ -7,6 +7,8 @@ var scores = []
 
 var players = []
 
+var WINS_TO_PROCEED = 1
+
 var Throw = {
   Ready: 1,
   Thrown: 2,
@@ -64,7 +66,7 @@ function createPlayerScore (idx) {
   score.inc = function () {
     this.set(this.value + 1)
 
-    if (this.value === 1) {
+    if (this.value === WINS_TO_PROCEED) {
       unhookAllInput()
       runWinnerSequence(idx)
     }
