@@ -3,6 +3,8 @@ var chains
 
 var worldBody
 
+var currentLevel = 0
+
 var scores = []
 
 var players = []
@@ -116,7 +118,9 @@ PlayState.prototype.preload = function() {
 
   game.load.spritesheet('dust', 'assets/graphics/_dust.png', 8, 8);
 
-  game.load.tilemap('level1', 'assets/maps/sgunn.json', null, Phaser.Tilemap.TILED_JSON);
+  game.load.tilemap('level1', 'assets/maps/pit.json', null, Phaser.Tilemap.TILED_JSON);
+  game.load.tilemap('level2', 'assets/maps/tfall.json', null, Phaser.Tilemap.TILED_JSON);
+  game.load.tilemap('level3', 'assets/maps/sgunn.json', null, Phaser.Tilemap.TILED_JSON);
   game.load.image('tileset', 'assets/graphics/_tileset.png');
 
   game.load.spritesheet('player', 'assets/graphics/_player.png', 10*2, 16*2);
@@ -205,7 +209,7 @@ PlayState.prototype.create = function() {
   this.playerCollisionGroup = game.physics.p2.createCollisionGroup();
   this.groundCollisionGroup = game.physics.p2.createCollisionGroup();
 
-  this.map = game.add.tilemap('level1');
+  this.map = game.add.tilemap('level' + (currentLevel+1));
   this.map.addTilesetImage('_tileset', 'tileset');
   this.bg = this.map.createLayer('BG');
 
@@ -443,6 +447,11 @@ PlayState.prototype.createPlayer = function(x, y, team) {
   player.update = function() {
     if (game.paused) return
 
+    if (this.y > 2000) {
+      murderPlayer(this, null)
+      return
+    }
+
     this.sword.visible = (this.swordState === Throw.Ready && this.visible)
 
     if (this.spawnDelay) this.spawnDelay--
@@ -466,53 +475,8 @@ PlayState.prototype.createPlayer = function(x, y, team) {
 
               scores[players.indexOf(player)].inc()
 
-              if (that.looseSword) {
-                var sword = that.looseSword
-                that.looseSword = null
-                var tween = game.add.tween(sword).to({alpha: 0}, 1000)
-                tween.onComplete.add(function() {
-                  this.destroy()
-                }, sword)
-                tween.start()
-              }
-              player.chain.detach()
-              if (that.chain) {
-                if (that.chain.sword.lock) {
-                  game.physics.p2.removeConstraint(that.chain.sword.lock)
-                }
-                that.chain.sprite.kill()
-                that.chain.sword.kill()
-                that.chain = null
-              }
-              game.state.getCurrentState().spawnDeathDust(that)
-              for (var i=0; i < 20; i++) {
-                var seg = game.state.getCurrentState().spawnTinyParticle(that.x, that.y)
-                seg.tint = that.team
-                // seg.alpha = 0.6
-                var rot = Math.random() * Math.PI * 2
-                var force = Math.random() * 800
-                seg.body.velocity.x += Math.cos(rot) * force*0.3 + Math.cos(player.chain.sword.rotation) * force
-                seg.body.velocity.y += Math.sin(rot) * force*0.3 + Math.sin(player.chain.sword.rotation) * force
-              }
-              that.visible = false
-              that.body.x = -10000
-              that.body.y = -10000
-              that.x = -10000
-              that.y = -10000
+              murderPlayer(that, player)
             })
-            game.time.events.add(5000, function() {
-              var spawn = spawns[Math.floor(Math.random() * spawns.length)]
-              this.body.x = spawn.x
-              this.body.y = spawn.y
-              this.x = spawn.x
-              this.y = spawn.y
-              this.fireCountdown = 500
-              this.swordState = Throw.Ready
-              this.body.velocity.x = 0
-              this.body.velocity.y = 0
-              this.visible = true
-              game.state.getCurrentState().spawnDeathDust(this)
-            }, this);
             break
           }
         }
@@ -1151,12 +1115,67 @@ function runWinnerSequence (winnerIdx) {
     countdown.text = val
     if (val === 0) {
       clearInterval(ix)
-      restartWorld(0)
+      restartWorld()
     }
   }, 800)
 }
 
-function restartWorld (levelIdx) {
+function murderPlayer (victim, killer) {
+  if (!victim.visible) return
+
+  if (victim.looseSword) {
+    var sword = victim.looseSword
+    victim.looseSword = null
+    var tween = game.add.tween(sword).to({alpha: 0}, 1000)
+    tween.onComplete.add(function() {
+      this.destroy()
+    }, sword)
+    tween.start()
+  }
+  if (killer) killer.chain.detach()
+  if (victim.chain) {
+    if (victim.chain.sword.lock) {
+      game.physics.p2.removeConstraint(victim.chain.sword.lock)
+    }
+    victim.chain.sprite.kill()
+    victim.chain.sword.kill()
+    victim.chain = null
+  }
+  game.state.getCurrentState().spawnDeathDust(victim)
+  for (var i=0; i < 20; i++) {
+    var seg = game.state.getCurrentState().spawnTinyParticle(victim.x, victim.y)
+    seg.tint = victim.team
+    // seg.alpha = 0.6
+    var rot = Math.random() * Math.PI * 2
+    var force = Math.random() * 800
+    var secondaryRot = killer ? killer.chain.sword.rotation : Math.Pi/2
+    seg.body.velocity.x += Math.cos(rot) * force*0.3 + Math.cos(secondaryRot) * force
+    seg.body.velocity.y += Math.sin(rot) * force*0.3 + Math.sin(secondaryRot) * force
+  }
+  victim.visible = false
+  victim.body.x = -10000
+  victim.body.y = -10000
+  victim.x = -10000
+  victim.y = -10000
+
+  game.time.events.add(5000, function() {
+    var spawns = game.state.getCurrentState().spawns
+    var spawn = spawns[Math.floor(Math.random() * spawns.length)]
+    this.body.x = spawn.x
+    this.body.y = spawn.y
+    this.x = spawn.x
+    this.y = spawn.y
+    this.fireCountdown = 500
+    this.swordState = Throw.Ready
+    this.body.velocity.x = 0
+    this.body.velocity.y = 0
+    this.visible = true
+    game.state.getCurrentState().spawnDeathDust(this)
+  }, victim);
+}
+
+function restartWorld () {
+  currentLevel = (currentLevel + 1) % 3
   game.state.restart(true)
   // game.state.add('play', PlayState);
   // game.state.start('play');
