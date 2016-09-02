@@ -118,8 +118,8 @@ PlayState.prototype.preload = function() {
 
   game.load.spritesheet('dust', 'assets/graphics/_dust.png', 8, 8);
 
-  game.load.tilemap('level1', 'assets/maps/pit.json', null, Phaser.Tilemap.TILED_JSON);
-  game.load.tilemap('level2', 'assets/maps/tfall.json', null, Phaser.Tilemap.TILED_JSON);
+  game.load.tilemap('level2', 'assets/maps/pit.json', null, Phaser.Tilemap.TILED_JSON);
+  game.load.tilemap('level1', 'assets/maps/tfall.json', null, Phaser.Tilemap.TILED_JSON);
   game.load.tilemap('level3', 'assets/maps/sgunn.json', null, Phaser.Tilemap.TILED_JSON);
   game.load.image('tileset', 'assets/graphics/_tileset.png');
 
