@@ -9,7 +9,10 @@ var scores = []
 
 var players = []
 
-var WINS_TO_PROCEED = 1
+var WINS_TO_PROCEED = 10
+var SWORD_SPEED = 650
+var SWORD_PULL_SELF_SPEED = 400
+var SWORD_PULL_SWORD_SPEED = 550
 
 var Throw = {
   Ready: 1,
@@ -719,7 +722,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       if (this.swordState === Throw.PullingSelf) {
         this.pullAccum += 20
         var angle = game.math.angleBetween(this.x, this.y, sword.x, sword.y)
-        var pullForce = Math.min(400, this.pullAccum)
+        var pullForce = Math.min(SWORD_PULL_SELF_SPEED, this.pullAccum)
         if (pullForce < 175) {
           pullForce = 0
         }
@@ -728,7 +731,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       } else if (this.swordState === Throw.PullingSword) {
         var angle = game.math.angleBetween(sword.x, sword.y, this.x, this.y)
         this.pullAccum += 40
-        var pullForce = Math.min(550, this.pullAccum)
+        var pullForce = Math.min(SWORD_PULL_SWORD_SPEED, this.pullAccum)
         sword.body.moveRight(Math.cos(angle) * pullForce)
         sword.body.moveDown(Math.sin(angle) * pullForce)
         sword.body.rotation = angle - Math.PI
@@ -794,7 +797,6 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     sword.body.fixedRotation = true
     sword.done = false
     // sword.body.debug = true
-    var SWORD_SPEED = 650
     sword.update = function () {
       if (!this.hitGround) {
         sword.body.moveRight(SWORD_SPEED * dirX)
