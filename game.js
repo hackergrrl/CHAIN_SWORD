@@ -107,6 +107,7 @@ function playerJoin (idx) {
   players[idx].input = inputs[idx]
   game.state.getCurrentState().spawnDeathDust(players[idx])
   scores[idx].join()
+  game.sfx.spawn.play()
   // if (game.input.gamepad.pad4.connected) {
 }
 
@@ -141,8 +142,15 @@ PlayState.prototype.preload = function() {
   game.load.image('bubble_fg', 'assets/graphics/_bubble_letter.png');
   game.load.image('bubble_pop', 'assets/graphics/_bubble_pop.png');
 
-  game.load.audio('gun', 'assets/sounds/gun.wav');
+  game.load.audio('shoot', 'assets/sounds/shoot.wav');
   game.load.audio('jump', 'assets/sounds/jump.wav');
+  game.load.audio('spawn', 'assets/sounds/spawn.wav');
+  game.load.audio('death', 'assets/sounds/death.wav');
+  game.load.audio('chain', 'assets/sounds/chain_loop.wav');
+  game.load.audio('impact1', 'assets/sounds/impact1.wav');
+  game.load.audio('impact2', 'assets/sounds/impact2.wav');
+  game.load.audio('impact3', 'assets/sounds/impact3.wav');
+  // game.load.audio('impact4', 'assets/sounds/impact4.wav');
 
   game.scale.pageAlignHorizontally = true;
   game.scale.pageAlignVertically = true;
@@ -204,8 +212,23 @@ PlayState.prototype.create = function() {
   game.physics.p2.world.setGlobalStiffness(1e5);
   // game.physics.p2.TILE_BIAS = 40;
 
-  game.gun = game.add.audio('gun');
-  game.jump = game.add.audio('jump');
+  game.sfx = {}
+  game.sfx.shoot = game.add.audio('shoot');
+  game.sfx.shoot.volume = 0.3
+  game.sfx.jump = game.add.audio('jump');
+  game.sfx.jump.volume = 0.6
+  game.sfx.spawn = game.add.audio('spawn');
+  game.sfx.death = game.add.audio('death');
+  game.sfx.chain = game.add.audio('chain');
+  game.sfx.chain.loop = true
+  game.sfx.chain.volume = 0.1
+  game.sfx.impact1 = game.add.audio('impact1');
+  game.sfx.impact1.volume = 0.8
+  game.sfx.impact2 = game.add.audio('impact2');
+  game.sfx.impact2.volume = 0.8
+  game.sfx.impact3 = game.add.audio('impact3');
+  game.sfx.impact3.volume = 0.8
+  // game.sfx.impact4 = game.add.audio('impact4');
 
   this.dustCollisionGroup = game.physics.p2.createCollisionGroup();
   this.chainCollisionGroup = game.physics.p2.createCollisionGroup();
@@ -334,6 +357,9 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       if (this.body.velocity.y < -10 && this.body.velocity.y > -40) {
         game.state.getCurrentState().spawnLandingDust(this.x, this.y + this.height * 0.5 - 4)
       }
+      if (this.body.velocity.y < -25) {
+        game.sfx.impact2.play()
+      }
     }
     // console.log(shapeA.material)
     // console.log(shapeB.material)
@@ -437,7 +463,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       this.body.moveUp(this.jumpForce)
       // this.body.velocity.y = -this.jumpForce;
       this.jumpCountdown = 500
-      // game.jump.play();
+      game.sfx.jump.play();
       game.state.getCurrentState().spawnJumpDust(this.x, this.y + this.height * 0.5)
     }
     if (!this.canJump() && this.onSideWall() && this.jumpCountdown < 0) {
@@ -703,6 +729,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     if (!this.spawnDelay && this.input.isShooting()) {
       if (this.chain && this.swordState === Throw.Locked && this.fireCountdown <= 0) {
         this.chain.reelIn()
+        game.sfx.chain.play()
       }
     }
     this.fireCountdown -= game.time.elapsed;
@@ -745,6 +772,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
         this.chain.sprite.destroy()
         this.chain = null
         this.swordState = Throw.Ready
+        game.sfx.chain.stop()
         this.fireCountdown = this.fireDelay;
       }
     }
@@ -784,6 +812,10 @@ PlayState.prototype.createPlayer = function(x, y, team) {
 
     this.swordState = Throw.Thrown
 
+    game.sfx.shoot.play()
+    game.sfx.chain.play()
+    game.state.getCurrentState().spawnOmniDust(this.x, this.y)
+
     // sword
     var sword = game.state.getCurrentState().swords.create(this.x, this.y, 'sword')
     game.physics.p2.enable(sword, false);
@@ -820,11 +852,13 @@ PlayState.prototype.createPlayer = function(x, y, team) {
         // if (1===1 || dot1 === 1 || dot2 === 1) {
           this.hitGround = true
           game.state.getCurrentState().spawnOmniDust(this.x, this.y)
+          game.sfx.impact3.play()
           var maxForce = 2000000
           this.lock = game.physics.p2.createRevoluteConstraint(this.body, [0, 0], worldBody, [this.x - dirX*10, this.y - dirY*10], maxForce);
           this.body.allowGravity = false
           this.done = true
           player.swordState = Throw.Locked
+          game.sfx.chain.stop()
         // }
       }
     }, sword)
@@ -1125,6 +1159,8 @@ function runWinnerSequence (winnerIdx) {
 function murderPlayer (victim, killer) {
   if (!victim.visible) return
 
+  game.sfx.death.play()
+
   if (victim.looseSword) {
     var sword = victim.looseSword
     victim.looseSword = null
@@ -1173,6 +1209,7 @@ function murderPlayer (victim, killer) {
     this.body.velocity.y = 0
     this.visible = true
     game.state.getCurrentState().spawnDeathDust(this)
+    game.sfx.spawn.play()
   }, victim);
 }
 
