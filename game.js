@@ -3,6 +3,8 @@ var chains
 
 var worldBody
 
+var musicStarted = false
+
 var currentLevel = 0
 
 var scores = []
@@ -151,7 +153,7 @@ PlayState.prototype.preload = function() {
   game.load.audio('impact2', 'assets/sounds/impact2.wav');
   game.load.audio('impact3', 'assets/sounds/impact3.wav');
   // game.load.audio('impact4', 'assets/sounds/impact4.wav');
-  //
+  game.load.audio('shatter', 'assets/sounds/shatter.wav');
   game.load.audio('music', 'assets/sounds/music.mp3');
 
   game.scale.pageAlignHorizontally = true;
@@ -230,9 +232,17 @@ PlayState.prototype.create = function() {
   game.sfx.impact2.volume = 0.8
   game.sfx.impact3 = game.add.audio('impact3');
   game.sfx.impact3.volume = 0.8
+  game.sfx.shatter = game.add.audio('shatter');
+  game.sfx.shatter.volume = 0.8
   game.sfx.music = game.add.audio('music');
   game.sfx.music.volume = 0.8
-  game.sfx.music.play()
+  game.sfx.music.stop()
+  if (!musicStarted) {
+    game.sfx.music.loop = true
+    game.sfx.music.volume = 0.7
+    game.sfx.music.play()
+    musicStarted = true
+  }
   // game.sfx.impact4 = game.add.audio('impact4');
 
   this.dustCollisionGroup = game.physics.p2.createCollisionGroup();
@@ -534,6 +544,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
               this.chain.hit = true
             }
             game.state.getCurrentState().spawnOmniDust(this.chain.sword.x, this.chain.sword.y)
+            game.sfx.impact3.play()
             break
           }
         }
@@ -568,6 +579,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
                     game.state.getCurrentState().spawnLandingDust(player.chain.sword.x, player.chain.sword.y)
                     player.chain.reelIn()
                     player.chain.detach()
+                    game.sfx.shatter.play()
                     if (that.chain) {
                       // spawn broken chain fragments
                       var steps = 0
@@ -624,6 +636,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
                         if (shapeB.material && shapeB.material.name == 'ground') {
                           if (Math.abs(this.body.velocity.y) > 10) {
                             game.state.getCurrentState().spawnLandingDust(this.x, this.y)
+                            game.sfx.impact3.play()
                           }
                         } else {
                           this.body.angularVelocity += 30
@@ -1093,6 +1106,7 @@ function stepAlongLineSeg(start, end, STEP_SIZE, cb) {
 }
 
 function gameFreeze(duration, cb) {
+  duration = 0.01
   game.paused = true
   setTimeout(function() {
     game.paused = false
