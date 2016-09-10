@@ -1,6 +1,6 @@
 #!/bin/bash
 
-REMOTE="stephenwhitmore.com"
+REMOTE="stephen@stephenwhitmore.com"
 REMOTE_DIR="chain-sword"
 FILES="index.html game.js phaser.js assets"
 
