@@ -506,7 +506,6 @@ PlayState.prototype.createPlayer = function(x, y, team) {
           var dist = game.math.distance(this.x, this.y, player.chain.sword.x, player.chain.sword.y)
           if (dist <= 16 && this.visible) {
             var that = this
-            this.swordState = Throw.Dead
             that.wip = true
             gameFreeze(0.1, function() {
               game.paused = false
@@ -700,7 +699,6 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     }
 
     // Shoot
-    // if (game.input.keyboard.justPressed(this.input.shoot)) {
     if (!this.spawnDelay && this.input.isShooting()) {
       // Premature reel-in
       // if (this.swordState === Throw.Thrown && this.fireCountdown <= 100) {
@@ -1174,6 +1172,8 @@ function runWinnerSequence (winnerIdx) {
 function murderPlayer (victim, killer) {
   if (!victim.visible) return
 
+  victim.swordState = Throw.Dead
+
   game.sfx.death.play()
   game.sfx.chain.stop() // just in case
 
@@ -1192,7 +1192,9 @@ function murderPlayer (victim, killer) {
       game.physics.p2.removeConstraint(victim.chain.sword.lock)
     }
     victim.chain.sprite.kill()
+    victim.chain.sprite.destroy()
     victim.chain.sword.kill()
+    victim.chain.sword.destroy()
     victim.chain = null
   }
   game.state.getCurrentState().spawnDeathDust(victim)
