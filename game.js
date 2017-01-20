@@ -3,6 +3,7 @@ var worldBody
 var musicStarted = false
 
 var currentLevel = 0
+var ticks = 0
 
 var scores = []
 
@@ -271,7 +272,7 @@ PlayState.prototype.create = function() {
   this.playerMaterial = game.physics.p2.createMaterial('player');
   this.chainMaterial = game.physics.p2.createMaterial('chain');
   var groundPlayerCM = game.physics.p2.createContactMaterial(this.groundMaterial, this.playerMaterial)
-  groundPlayerCM.friction = 1.0
+  groundPlayerCM.friction = 0.0
   groundPlayerCM.restitution = 0.15
   groundPlayerCM.stiffness = 1e7
   var groundChainCM = game.physics.p2.createContactMaterial(this.groundMaterial, this.chainMaterial)
@@ -409,32 +410,33 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     return (!result ? false : d)
   }
 
-  player.canJump = function() {
+  player.onGround = function () {
+    var yAxis = [0, 1]
+    var result = false;
+    for (var i=0; i < game.physics.p2.world.narrowphase.contactEquations.length; i++)
+    {
+      var c = game.physics.p2.world.narrowphase.contactEquations[i];
+      if (c.bodyA === player.body.data || c.bodyB === player.body.data)
+      {
+        var d = p2.vec2.dot(c.normalA, yAxis);
+        if (c.bodyA === player.body.data)
+        {
+          d *= -1;
+        }
+        if (d > 0.5)
+        {
+          result = true;
+        }
+      }
+    }
+    return result;
+  }
+
+  player.canJump = function s() {
     if (this.jumpCountdown > 0) {
       return false
     }
-    function checkIfCanJump() {
-      var yAxis = [0, 1]
-      var result = false;
-      for (var i=0; i < game.physics.p2.world.narrowphase.contactEquations.length; i++)
-      {
-        var c = game.physics.p2.world.narrowphase.contactEquations[i];
-        if (c.bodyA === player.body.data || c.bodyB === player.body.data)
-        {
-          var d = p2.vec2.dot(c.normalA, yAxis);
-          if (c.bodyA === player.body.data)
-          {
-            d *= -1;
-          }
-          if (d > 0.5)
-          {
-            result = true;
-          }
-        }
-      }
-      return result;
-    }
-    return checkIfCanJump()
+    return this.onGround()
     // return this.body.onFloor() || this.body.touching.down;
   };
 
@@ -493,6 +495,11 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       murderPlayer(this, null)
       return
     }
+
+    if (this.onGround() && ticks % 4 === 0) {
+      this.body.velocity.x *= 0.99
+    }
+    // return this.body.onFloor() || this.body.touching.down;
 
     this.sword.visible = (this.swordState === Throw.Ready && this.visible)
 
@@ -932,6 +939,8 @@ PlayState.prototype.createPlayer = function(x, y, team) {
 
 
 PlayState.prototype.update = function() {
+
+  ticks++
 
   for (var i in players) {
     players[i].update()
