@@ -1,6 +1,3 @@
-// so fight me, pff
-var chains
-
 var worldBody
 
 var musicStarted = false
@@ -324,8 +321,6 @@ PlayState.prototype.create = function() {
 
   // Dust clouds
   this.dust = game.add.group();
-
-  chains = game.add.group();
 
   scores[0] = createPlayerScore(0)
   scores[1] = createPlayerScore(1)
