@@ -1166,7 +1166,7 @@ function runWinnerSequence (winnerIdx) {
       clearInterval(ix)
       restartWorld()
     }
-  }, 800)
+  }, 700)
 }
 
 function murderPlayer (victim, killer) {
