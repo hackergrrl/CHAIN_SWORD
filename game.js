@@ -849,7 +849,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     var sword = game.state.getCurrentState().swords.create(this.x, this.y, 'sword')
     game.physics.p2.enable(sword, false);
     sword.body.mass = 200
-    sword.body.setRectangle(16, 16, 0, 0)
+    sword.body.setRectangle(16, 8, 0, 0)
     sword.body.setCollisionGroup(state.chainCollisionGroup)
     sword.body.collides([state.groundCollisionGroup, state.chainCollisionGroup])
     sword.anchor.set(0, 0.5)
@@ -957,9 +957,10 @@ PlayState.prototype.update = function() {
   });
 };
 
-PlayState.prototype.render = function() {
-  // game.debug.body(this.player);
-}
+// no worky
+// PlayState.prototype.render = function() {
+//   if (players[0] && players[0].chain) game.debug.body(players[0].chain.sword)
+// }
 
 PlayState.prototype.spawnDust = function(x, y) {
   var dust = this.dust.create(x, y, 'dust');
