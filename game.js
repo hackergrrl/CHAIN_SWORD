@@ -103,6 +103,9 @@ var inputs
 function playerJoin (idx) {
   players[idx] = this.createPlayer(this.spawns[idx].x, this.spawns[idx].y, tints.numbers[idx])
   players[idx].spawnDelay = 30
+
+  players[idx].invincibilityCountdown = 400
+
   players[idx].input = inputs[idx]
   game.state.getCurrentState().spawnDeathDust(players[idx])
   scores[idx].join()
@@ -495,6 +498,13 @@ PlayState.prototype.createPlayer = function(x, y, team) {
 
     if (this.spawnDelay) this.spawnDelay--
 
+    if (this.invincibilityCountdown > 0) {
+      this.invincibilityCountdown--
+      this.visible = this.invincibilityCountdown % 10 >= 5
+    } else {
+      this.visible = true
+    }
+
     if (this.wip) return
 
     // check for other swords hitting us
@@ -502,9 +512,16 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       if (!players[i]) continue
       if (players[i] !== this) {
         var player = players[i]
+
         if (player.chain) {
           var dist = game.math.distance(this.x, this.y, player.chain.sword.x, player.chain.sword.y)
           if (dist <= 16 && this.visible) {
+            if (this.invincibilityCountdown > 0 && !player.chain.sword.lock) {
+              player.chain.detach()
+              player.chain.hit = true
+              break
+            }
+
             var that = this
             that.wip = true
             gameFreeze(0.1, function() {
@@ -1226,6 +1243,7 @@ function murderPlayer (victim, killer) {
     this.body.velocity.x = 0
     this.body.velocity.y = 0
     this.visible = true
+    this.invincibilityCountdown = 400
     game.state.getCurrentState().spawnDeathDust(this)
     game.sfx.spawn.play()
   }, victim);
