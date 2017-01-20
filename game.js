@@ -362,6 +362,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
   player.jumpForce = 360;
   player.fireDelay = 250;
   player.fireCountdown = 0;
+  player.wallJumpCountdown = 0
   player.team = team
   player.jumpCountdown = 0
   player.psychicCountdown = 0
@@ -403,7 +404,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
         }
         if (d > 0.5 || d < -0.5)
         {
-          result = true;
+          result = d
         }
       }
     }
@@ -474,6 +475,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
   }
 
   player.jump = function() {
+    // regular jumping
     if (this.canJump()) {
       this.body.moveUp(this.jumpForce)
       // this.body.velocity.y = -this.jumpForce;
@@ -481,9 +483,23 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       game.sfx.jump.play();
       game.state.getCurrentState().spawnJumpDust(this.x, this.y + this.height * 0.5)
     }
+
+    // wall jumping
     if (!this.canJump() && this.onSideWall() && this.jumpCountdown < 0) {
-      this.body.moveUp(this.jumpForce)
+      this.body.moveUp(this.jumpForce * 1.0)
+      var wallDir = this.onSideWall()
+      var wallJumpForce = 200
+
+      // give a boost if you face away from the wall
+      if ((this.scale.x < 0 && wallDir > 0) || (this.scale.x > 0 && wallDir < 0)) {
+        wallJumpForce *= 8
+        this.body.moveUp(this.jumpForce * 1.5)
+      }
+
+      if (wallDir > 0) this.body.moveLeft(200)
+      else this.body.moveRight(200)
       this.jumpCountdown = 500
+      this.wallJumpCountdown = 500
       game.state.getCurrentState().spawnJumpDust(this.x, this.y + this.height * 0.5)
     }
   };
@@ -703,13 +719,13 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       this.animations.play('jump_upward');
     }
 
-    if (this.input.isLeft() && this.body.velocity.x < 6) {
+    if (this.input.isLeft() && this.body.velocity.x < 6 && this.wallJumpCountdown <= 0) {
       this.body.force.x += -this.walkForce;
       // this.body.moveLeft(100)
       this.scale.x = -1;
       this.sword.scale.x = -1;
     }
-    else if (this.input.isRight() && this.body.velocity.x > -6) {
+    else if (this.input.isRight() && this.body.velocity.x > -6 && this.wallJumpCountdown <= 0) {
       this.body.force.x += this.walkForce;
       // this.body.moveRight(100)
       this.scale.x = 1;
@@ -768,6 +784,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     }
     this.fireCountdown -= game.time.elapsed;
     this.jumpCountdown -= game.time.elapsed;
+    this.wallJumpCountdown -= game.time.elapsed;
 
     // if (game.input.keyboard.isDown(this.input.jump)) {
     if (this.input.isJumping()) {
