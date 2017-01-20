@@ -1,5 +1,8 @@
 var worldBody
 
+// EXPERIMENTS
+var EIGHT_DIRS = false
+
 var musicStarted = false
 
 var currentLevel = 0
@@ -747,6 +750,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       // Throw sword
       if (this.swordState === Throw.Ready && this.fireCountdown <= 0) {
         var dir = this.getAimDir()
+        if (EIGHT_DIRS) dir = this.getAimDir8()
         this.shootChain(dir[0], dir[1])
         this.fireCountdown = this.fireDelay;
       }
@@ -828,6 +832,22 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       }
     }
   };
+
+  player.getAimDir8 = function() {
+    var dirX = 0
+    var dirY = 0
+
+    if (this.input.isUp()) dirY = -1
+    if (this.input.isDown()) dirY = 1
+    if (this.input.isLeft()) dirX = -1
+    if (this.input.isRight()) dirX = 1
+
+    if (dirX === 0 && dirY === 0) {
+      dirX = this.scale.x
+    }
+
+    return [dirX, dirY]
+  }
 
   player.getAimDir = function() {
     var dirX = this.scale.x
