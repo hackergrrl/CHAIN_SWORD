@@ -868,6 +868,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
     game.state.getCurrentState().spawnOmniDust(this.x, this.y)
 
     this.body.velocity.x -= dirX * 100
+    this.body.velocity.y -= dirY * 100
 
     // sword
     var sword = game.state.getCurrentState().swords.create(this.x, this.y, 'sword')
