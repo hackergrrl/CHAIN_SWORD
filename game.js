@@ -1212,7 +1212,7 @@ function murderPlayer (victim, killer) {
   victim.x = -10000
   victim.y = -10000
 
-  game.time.events.add(5000, function() {
+  game.time.events.add(4500, function() {
     var spawns = game.state.getCurrentState().spawns
     var spawn = spawns[Math.floor(Math.random() * spawns.length)]
     this.body.x = spawn.x
