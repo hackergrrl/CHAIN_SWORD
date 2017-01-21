@@ -83,6 +83,10 @@ function createPlayerScore (idx) {
     }
   }
 
+  score.dec = function () {
+    this.set(this.value - 1)
+  }
+
   score.join = function () {
     this.bubbleBg.visible = false
     this.bubbleFg.visible = false
@@ -1251,6 +1255,11 @@ function runWinnerSequence (winnerIdx) {
 
 function murderPlayer (victim, killer) {
   if (victim.swordState === Throw.Dead) return
+
+  // punish self-killing players
+  if (!killer) {
+    scores[players.indexOf(victim)].dec()
+  }
 
   victim.swordState = Throw.Dead
 
