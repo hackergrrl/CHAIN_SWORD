@@ -1,7 +1,10 @@
 var worldBody
 
 // EXPERIMENTS
-var EIGHT_DIRS = false
+var EXPERIMENTS = {
+  'sword-float': true,
+  '8-dir':       false,
+}
 
 var musicStarted = false
 
@@ -652,6 +655,16 @@ PlayState.prototype.createPlayer = function(x, y, team) {
                       sword.body.velocity.y += Math.sin(player.chain.sword.rotation) * 450
                       that.looseSword = sword
                       sword.update = function () {
+                        if (EXPERIMENT['sword-float']) {
+                          if (this.y > 460) {
+                            if (ticks % 15 === 0) {
+                              game.state.getCurrentState().spawnLandingDust(this.body.x, this.body.y + 20)
+                            }
+                          }
+                          if (this.y > 480) {
+                            this.body.velocity.y = -20
+                          }
+                        }
                         for (var i=0; i < players.length; i++) {
                           if (players[i].swordState === Throw.NoSword) {
                             var dist = game.math.distance(players[i].x, players[i].y, this.x, this.y)
@@ -750,7 +763,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       // Throw sword
       if (this.swordState === Throw.Ready && this.fireCountdown <= 0) {
         var dir = this.getAimDir()
-        if (EIGHT_DIRS) dir = this.getAimDir8()
+        if (EXPERIMENTS['8-dirs']) dir = this.getAimDir8()
         this.shootChain(dir[0], dir[1])
         this.fireCountdown = this.fireDelay;
       }
