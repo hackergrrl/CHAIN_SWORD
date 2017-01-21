@@ -658,12 +658,12 @@ PlayState.prototype.createPlayer = function(x, y, team) {
                       that.looseSword = sword
                       sword.update = function () {
                         if (EXPERIMENTS['sword-float']) {
-                          if (this.y > 460) {
+                          if (this.y > 510) {
                             if (ticks % 15 === 0) {
                               game.state.getCurrentState().spawnLandingDust(this.body.x, this.body.y + 20)
                             }
                           }
-                          if (this.y > 480) {
+                          if (this.y > 520) {
                             this.body.velocity.y = -20
                           }
                         }
