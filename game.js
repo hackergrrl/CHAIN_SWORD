@@ -1235,7 +1235,7 @@ function runWinnerSequence (winnerIdx) {
 }
 
 function murderPlayer (victim, killer) {
-  if (!victim.visible) return
+  if (victim.swordState === Throw.Dead) return
 
   victim.swordState = Throw.Dead
 
