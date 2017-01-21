@@ -134,6 +134,8 @@ PlayState.prototype.preload = function() {
   game.load.tilemap('level1', 'assets/maps/sgunn.json', null, Phaser.Tilemap.TILED_JSON);
   game.load.tilemap('level2', 'assets/maps/pit.json', null, Phaser.Tilemap.TILED_JSON);
   game.load.tilemap('level3', 'assets/maps/tfall.json', null, Phaser.Tilemap.TILED_JSON);
+  game.load.tilemap('level4', 'assets/maps/corridors.json', null, Phaser.Tilemap.TILED_JSON);
+  game.load.tilemap('level5', 'assets/maps/islands.json', null, Phaser.Tilemap.TILED_JSON);
   game.load.image('tileset', 'assets/graphics/_tileset.png');
 
   game.load.spritesheet('player', 'assets/graphics/_player.png', 10*2, 16*2);
@@ -655,7 +657,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
                       sword.body.velocity.y += Math.sin(player.chain.sword.rotation) * 450
                       that.looseSword = sword
                       sword.update = function () {
-                        if (EXPERIMENT['sword-float']) {
+                        if (EXPERIMENTS['sword-float']) {
                           if (this.y > 460) {
                             if (ticks % 15 === 0) {
                               game.state.getCurrentState().spawnLandingDust(this.body.x, this.body.y + 20)
@@ -1311,7 +1313,7 @@ function murderPlayer (victim, killer) {
 }
 
 function restartWorld () {
-  currentLevel = (currentLevel + 1) % 3
+  currentLevel = (currentLevel + 1) % 5
   game.state.restart(true)
   // game.state.add('play', PlayState);
   // game.state.start('play');
