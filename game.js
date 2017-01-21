@@ -719,7 +719,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       this.chain.sprite.x = this.x
       this.chain.sprite.y = this.y
       this.chain.sprite.angle = angle * (180 / Math.PI)
-      var dist = game.math.distance(this.x, this.y, sword.x, sword.y)
+      var dist = game.math.distance(this.x, this.y, sword.x, sword.y) + 5
       this.chain.sprite.width = dist
     }
 
