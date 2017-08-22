@@ -5,6 +5,7 @@ var EXPERIMENTS = {
   'sword-float': true,
   '8-dir':       false,
 }
+console.log(EXPERIMENTS)
 
 var musicStarted = false
 
@@ -17,7 +18,7 @@ var players = []
 
 var WINS_TO_PROCEED = 10
 var SWORD_SPEED = 650
-var SWORD_PULL_SELF_SPEED = 400
+var SWORD_PULL_SELF_SPEED = 400 * 1.5
 var SWORD_PULL_SWORD_SPEED = 550
 
 var Throw = {
@@ -115,7 +116,7 @@ function playerJoin (idx) {
   players[idx] = this.createPlayer(this.spawns[idx].x, this.spawns[idx].y, tints.numbers[idx])
   players[idx].spawnDelay = 30
 
-  players[idx].invincibilityCountdown = 400
+  players[idx].invincibilityCountdown = 300
 
   players[idx].input = inputs[idx]
   game.state.getCurrentState().spawnDeathDust(players[idx])
@@ -247,10 +248,8 @@ PlayState.prototype.create = function() {
   game.sfx.impact3.volume = 0.8
   game.sfx.shatter = game.add.audio('shatter');
   game.sfx.shatter.volume = 0.8
-  game.sfx.music = game.add.audio('music');
-  game.sfx.music.volume = 0.8
-  game.sfx.music.stop()
   if (!musicStarted) {
+    game.sfx.music = game.add.audio('music');
     game.sfx.music.loop = true
     game.sfx.music.volume = 0.7
     game.sfx.music.play()
@@ -672,6 +671,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
                           }
                         }
                         for (var i=0; i < players.length; i++) {
+                          if (!players[i]) continue
                           if (players[i].swordState === Throw.NoSword) {
                             var dist = game.math.distance(players[i].x, players[i].y, this.x, this.y)
                             // console.log(dist)
@@ -769,7 +769,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
       // Throw sword
       if (this.swordState === Throw.Ready && this.fireCountdown <= 0) {
         var dir = this.getAimDir()
-        if (EXPERIMENTS['8-dirs']) dir = this.getAimDir8()
+        if (EXPERIMENTS['8-dir']) dir = this.getAimDir8()
         this.shootChain(dir[0], dir[1])
         this.fireCountdown = this.fireDelay;
       }
@@ -1303,7 +1303,7 @@ function murderPlayer (victim, killer) {
   victim.x = -10000
   victim.y = -10000
 
-  game.time.events.add(4500, function() {
+  game.time.events.add(1500, function() {
     var spawns = game.state.getCurrentState().spawns
     var spawn = spawns[Math.floor(Math.random() * spawns.length)]
     this.body.x = spawn.x
@@ -1315,7 +1315,7 @@ function murderPlayer (victim, killer) {
     this.body.velocity.x = 0
     this.body.velocity.y = 0
     this.visible = true
-    this.invincibilityCountdown = 400
+    this.invincibilityCountdown = 300
     game.state.getCurrentState().spawnDeathDust(this)
     game.sfx.spawn.play()
   }, victim);
