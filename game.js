@@ -114,9 +114,9 @@ var inputs
 
 function playerJoin (idx) {
   players[idx] = this.createPlayer(this.spawns[idx].x, this.spawns[idx].y, tints.numbers[idx])
-  players[idx].spawnDelay = 30
+  players[idx].spawnDelay = 70
 
-  players[idx].invincibilityCountdown = 300
+  players[idx].invincibilityCountdown = 220
 
   players[idx].input = inputs[idx]
   game.state.getCurrentState().spawnDeathDust(players[idx])
