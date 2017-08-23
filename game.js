@@ -1318,7 +1318,7 @@ function murderPlayer (victim, killer) {
 }
 
 function restartWorld () {
-  currentLevel = (currentLevel + 1) % 5
+  currentLevel = (currentLevel + 1) % 4
   game.state.restart(true)
   // game.state.add('play', PlayState);
   // game.state.start('play');
