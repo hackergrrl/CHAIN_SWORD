@@ -617,6 +617,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
                   var that = this
                   this.chain.hit = true
                   gameFreeze(0.1, function() {
+                    that.lastHit = player  // mark this player as the killer if the player dies from falling down a pit, swordless
                     game.state.getCurrentState().spawnLandingDust(player.chain.sword.x, player.chain.sword.y)
                     player.chain.reelIn()
                     player.chain.detach()
@@ -672,6 +673,7 @@ PlayState.prototype.createPlayer = function(x, y, team) {
                             var dist = game.math.distance(players[i].x, players[i].y, this.x, this.y)
                             // console.log(dist)
                             if (dist <= 16) {
+                              this.lastHit = null  // clear the 'lastHit' register now that their sword is back
                               var that = this
                               gameFreeze(0.1, function() {
                                 players[i].swordState = Throw.Ready
@@ -1252,9 +1254,16 @@ function runWinnerSequence (winnerIdx) {
 function murderPlayer (victim, killer) {
   if (victim.swordState === Throw.Dead) return
 
-  // punish self-killing players
+  // pit death
   if (!killer) {
-    scores[players.indexOf(victim)].dec()
+    if (victim.lastHit !== null && victim.lastHit !== undefined) {
+      // someone broke their chain before they fell
+      scores[players.indexOf(victim.lastHit)].inc()
+      victim.lastHit = null
+    } else {
+      // punish self-killing players
+      scores[players.indexOf(victim)].dec()
+    }
   }
 
   victim.swordState = Throw.Dead
