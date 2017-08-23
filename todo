@@ -1,8 +1,12 @@
+# fix
+music keeps vanishing (tab change? nonlooping?)
+
+# balance
 easier to do big wall jumps
 if you break someone's chain and then they fall /wo sword, you get point
 more of a ledge to recover from fall in level 2
 bigger loose sword recovery hitbox
-faster respawn as player count gets lower
-music keeps vanishing (tab change? nonlooping?)
-join bubbles stop bobbing if you change tabs and back
+
+# feature
+make next-round countdown shake as it nears zero
 

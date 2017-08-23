@@ -5,9 +5,7 @@ var EXPERIMENTS = {
   'sword-float': true,
   '8-dir':       false,
 }
-console.log(EXPERIMENTS)
-
-var musicStarted = false
+console.log('experiments', EXPERIMENTS)
 
 var currentLevel = 0
 var ticks = 0
@@ -79,6 +77,7 @@ function createPlayerScore (idx) {
     this.set(this.value + 1)
 
     if (this.value === WINS_TO_PROCEED) {
+      game.sfx.music.stop()
       unhookAllInput()
       runWinnerSequence(idx)
     }
@@ -248,14 +247,11 @@ PlayState.prototype.create = function() {
   game.sfx.impact3.volume = 0.8
   game.sfx.shatter = game.add.audio('shatter');
   game.sfx.shatter.volume = 0.8
-  if (!musicStarted) {
-    game.sfx.music = game.add.audio('music');
-    game.sfx.music.loop = true
-    game.sfx.music.volume = 0.7
-    game.sfx.music.play()
-    musicStarted = true
-  }
-  // game.sfx.impact4 = game.add.audio('impact4');
+
+  game.sfx.music = game.add.audio('music');
+  game.sfx.music.play()
+  game.sfx.music.loop = true
+  game.sfx.music.volume = 0.7
 
   this.dustCollisionGroup = game.physics.p2.createCollisionGroup();
   this.chainCollisionGroup = game.physics.p2.createCollisionGroup();
