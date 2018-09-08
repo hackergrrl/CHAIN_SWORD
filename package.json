@@ -1,6 +1,6 @@
 {
   "name": "CHAIN-SWORD",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Small same-screen multiplayer game with swords attached to chains.",
   "main": "app.js",
   "scripts": {
