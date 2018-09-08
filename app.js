@@ -9,6 +9,10 @@ electron.app.commandLine.appendSwitch('ignore-gpu-blacklist', 'true')
 electron.app.once('ready', createWindow)
 
 function createWindow () {
+  electron.globalShortcut.register('Esc', function () {
+    process.exit(0)
+  })
+
   var INDEX = 'file://' + path.resolve(__dirname, './index.html')
   var winOpts = {
     title: 'CHAIN SWORD',
