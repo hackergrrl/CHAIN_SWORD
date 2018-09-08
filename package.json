@@ -1,10 +1,11 @@
 {
-  "name": "ld30",
+  "name": "CHAIN-SWORD",
   "version": "0.0.0",
-  "description": "",
-  "main": "game.js",
+  "description": "Small same-screen multiplayer game with swords attached to chains.",
+  "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
   },
   "repository": {
     "type": "git",
@@ -15,5 +16,17 @@
   "bugs": {
     "url": "https://github.com/noffle/ld30/issues"
   },
-  "homepage": "https://github.com/noffle/ld30"
+  "homepage": "https://github.com/noffle/ld30",
+  "build": {
+    "appId": "hacks.noffle.chainsword",
+    "mac": {
+      "category": "Games"
+    },
+    "linux": {
+      "category": "Games"
+    }
+  },
+  "devDependencies": {
+    "electron-builder": "^20.28.4"
+  }
 }
