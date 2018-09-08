@@ -25,7 +25,7 @@ function createWindow () {
   win.once('ready-to-show', function () {
     win.setMenu(null)
     win.show()
-    win.webContents.openDevTools()
+    if (process.argv[2] === 'debug') win.webContents.openDevTools()
   })
   win.loadURL(INDEX)
 }
