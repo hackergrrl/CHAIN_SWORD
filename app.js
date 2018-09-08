@@ -12,14 +12,9 @@ function createWindow () {
   var INDEX = 'file://' + path.resolve(__dirname, './index.html')
   var winOpts = {
     title: 'CHAIN SWORD',
-    width: 1024,
-    height: 768,
-    modal: true,
-    show: false,
-    // TODO: fullscreen
-    // TODO: no scroll bars
-    // TODO: no window decorations
-    alwaysOnTop: true
+    width: 640,
+    height: 576,
+    fullscreen: true,
   }
   var win = new electron.BrowserWindow(winOpts)
   win.once('ready-to-show', function () {
